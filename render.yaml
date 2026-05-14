@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: toa-toa-api
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: CHAVE_MESTRA
+        sync: false
+      - key: NODE_VERSION
+        value: 20
+      - key: PORT
+        value: 3000
+    healthCheckPath: /
+    rootDirectory: .

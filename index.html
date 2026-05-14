@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste API TOA-TOA</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 0 20px; line-height: 1.6; }
+        form { background: #f4f4f4; padding: 20px; border-radius: 8px; display: grid; gap: 10px; }
+        input, textarea, button { padding: 8px; width: 100%; box-sizing: border-box; }
+        button { cursor: pointer; background: #28a745; color: white; border: none; font-weight: bold; }
+        button:hover { background: #218838; }
+        .config { border-bottom: 2px solid #ddd; margin-bottom: 20px; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h1>Painel de Teste - TOA-TOA</h1>
+
+    <div class="config">
+        <label>Chave API (CHAVE_MESTRA):</label>
+        <input type="password" id="apiKey" placeholder="Insira a sua chave de comunicação">
+    </div>
+
+    <h2>Novo Produto</h2>
+    <form id="produtoForm">
+        <input type="text" id="nomeProduto" placeholder="Nome do Produto" required>
+        <input type="text" id="categoria" placeholder="Categoria">
+        <input type="date" id="validade">
+        <input type="number" id="quantidade" placeholder="Quantidade" value="1">
+        <input type="number" step="0.01" id="precoUnitario" placeholder="Preço Unitário">
+        <input type="number" step="0.01" id="precoPacote" placeholder="Preço Pacote">
+        <textarea id="descricao" placeholder="Descrição"></textarea>
+        <button type="submit">Salvar Produto</button>
+    </form>
+
+    <h2>Lista de Produtos</h2>
+    <button onclick="carregarProdutos()" style="background: #007bff; width: auto;">Atualizar Lista</button>
+    <table id="produtosTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Preço</th>
+                <th>Qtd</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        const form = document.getElementById('produtoForm');
+        const apiKeyInput = document.getElementById('apiKey');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                nomeProduto: document.getElementById('nomeProduto').value,
+                categoria: document.getElementById('categoria').value,
+                validade: document.getElementById('validade').value,
+                quantidade: document.getElementById('quantidade').value,
+                precoUnitario: document.getElementById('precoUnitario').value,
+                precoPacote: document.getElementById('precoPacote').value,
+                descricao: document.getElementById('descricao').value,
+                imagem: 'placeholder.jpg'
+            };
+
+            try {
+                const res = await fetch('/toa-toa-api-supabase', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': apiKeyInput.value
+                    },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                alert(result.mensagem || result.status);
+                if (res.ok) carregarProdutos();
+            } catch (err) {
+                alert('Erro ao salvar: ' + err.message);
+            }
+        });
+
+        async function carregarProdutos() {
+            const tbody = document.querySelector('#produtosTable tbody');
+            tbody.innerHTML = '<tr><td colspan="4">Carregando...</td></tr>';
+            
+            try {
+                const res = await fetch('/toa-toa-api-supabase', {
+                    headers: { 'x-api-key': apiKeyInput.value }
+                });
+                const result = await res.json();
+                
+                if (result.status === "sucesso") {
+                    tbody.innerHTML = '';
+                    result.dados.forEach(p => { // Adiciona um evento de clique para buscar detalhes
+                        const row = `<tr>
+                            <td>${p.id}</td>
+                            <td>${p.nome}</td>
+                            <td>R$ ${p.preco_unitario}</td>
+                            <td>${p.quantidade}</td>
+                        </tr>`;
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = row;
+                        tr.onclick = () => mostrarDetalhesProduto(p.id); // Adiciona o evento de clique
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="4">Erro: ${result.mensagem}</td></tr>`;
+                }
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="4">Erro de conexão</td></tr>`;
+            }
+        }
+
+        async function mostrarDetalhesProduto(id) {
+            try {
+                const res = await fetch(`/toa-toa-api-supabase/${id}`, {
+                    headers: { 'x-api-key': apiKeyInput.value }
+                });
+                const result = await res.json();
+
+                if (result.status === "sucesso") {
+                    const p = result.dados;
+                    alert(`Detalhes do Produto:\n` +
+                          `ID: ${p.id}\n` +
+                          `Nome: ${p.nome}\n` +
+                          `Categoria: ${p.categoria || 'N/A'}\n` +
+                          `Validade: ${p.validade || 'N/A'}\n` +
+                          `Quantidade: ${p.quantidade}\n` +
+                          `Preço Unitário: R$ ${p.preco_unitario}\n` +
+                          `Preço Pacote: R$ ${p.preco_pacote}\n` +
+                          `Descrição: ${p.descricao || 'N/A'}\n` +
+                          `Imagem: ${p.imagem || 'N/A'}`);
+                } else {
+                    alert(`Erro ao buscar detalhes: ${result.mensagem}`);
+                }
+            } catch (err) {
+                alert('Erro de conexão ao buscar detalhes: ' + err.message);
+            }
+        }
+    </script>
+</body>
+</html>

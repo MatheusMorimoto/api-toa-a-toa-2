@@ -1,0 +1,16 @@
+{
+  "name": "toa-toa-api",
+  "version": "1.0.0",
+  "description": "API e Frontend para integração Supabase",
+  "main": "db.js",
+  "scripts": {
+    "start": "node db.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1"
+  }
+}
