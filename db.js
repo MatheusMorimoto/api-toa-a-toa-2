@@ -334,7 +334,7 @@ app.delete('/toa-toa-api-supabase/:id?', async (req, res) => {
 });
 
 
-// --- ROTAS PARA CLIENTES (SQL BASE: CÓDIGO 2 JSONB) ---
+// --- ROTAS PARA CLIENTES (SQL BASE: COLUNAS INDIVIDUAIS) ---
 
 // 1. Listar Clientes (GET)
 app.get('/toa-toa-clientes', async (req, res) => {
