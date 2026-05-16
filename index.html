@@ -14,6 +14,11 @@
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #f2f2f2; }
+        .relatorio-tecnico { margin-top: 50px; padding: 20px; border: 1px solid #ccc; background: #fff; border-radius: 8px; font-size: 0.9em; color: #333; }
+        .relatorio-tecnico h3 { color: #2c3e50; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .relatorio-tecnico code { background: #eee; padding: 2px 4px; border-radius: 4px; }
+        .metodo-put { color: #d35400; font-weight: bold; }
+        .metodo-delete { color: #c0392b; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -51,6 +56,34 @@
         </thead>
         <tbody></tbody>
     </table>
+
+    <!-- Seção de Relatório e Guia Técnico -->
+    <div class="relatorio-tecnico">
+        <h3>📘 Guia Técnico: Operações de Gestão</h3>
+        
+        <h4>1. Salvando Alterações (Edição)</h4>
+        <p>O processo de edição é uma "atualização segura". O sistema identifica o registro através do parâmetro <code>id</code> na URL. 
+        A interface preenche o formulário automaticamente via <code>prepararEdicao()</code>.</p>
+        <ul>
+            <li><strong>Tratamento de Imagem:</strong> Se um novo arquivo for enviado, o sistema gera um nome único e substitui o antigo no Storage. Caso contrário, mantém o link existente.</li>
+            <li><strong>Método HTTP <span class="metodo-put">PUT</span>:</strong> Diferente do cadastro, a edição utiliza <code>PUT</code>, informando ao servidor Node.js que deve atualizar um registro em vez de criar um novo.</li>
+        </ul>
+
+        <h4>2. Excluindo Produtos</h4>
+        <p>A exclusão exige confirmação para evitar perdas acidentais.</p>
+        <ul>
+            <li><strong>Gatilho:</strong> O botão "Excluir" dispara um evento <code>confirm()</code>.</li>
+            <li><strong>Limpeza Física:</strong> Antes de apagar do banco, o sistema remove a foto correspondente do Supabase Storage.</li>
+            <li><strong>Método HTTP <span class="metodo-delete">DELETE</span>:</strong> A requisição é enviada para o endpoint específico do produto.</li>
+        </ul>
+
+        <h4>3. O Papel Central do Backend (A Ponte)</h4>
+        <p>A comunicação depende da validação de segurança via headers:</p>
+        <ul>
+            <li><strong>Headers:</strong> Injeção obrigatória de <code>x-api-key</code> e <code>Content-Type: application/json</code>.</li>
+            <li><strong>Modularidade:</strong> Este modelo garante que, se o banco de dados mudar no futuro, apenas o arquivo <code>db.js</code> precisará de ajustes, mantendo o comportamento do Painel e do PHP padronizados.</li>
+        </ul>
+    </div>
 
     <script>
         const form = document.getElementById('produtoForm');
