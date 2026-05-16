@@ -35,7 +35,7 @@ app.get('/', (req, res) => {
 app.get('/toa-toa-api-supabase', async (req, res) => {
     const chaveRecebida = req.headers['x-api-key'];
 
-    if (!chaveRecebida || chaveRecebida !== CHAVE_MESTRA) {
+    if (!chaveRecebida || chaveRecebida.trim() !== CHAVE_MESTRA.trim()) {
         console.log("⚠️ Tentativa de acesso negada: Chave inválida ou ausente.");
         return res.status(401).json({
             status: "erro",
@@ -67,7 +67,7 @@ app.get('/toa-toa-api-supabase', async (req, res) => {
 app.post('/toa-toa-api-supabase', async (req, res) => {
     const chaveRecebida = req.headers['x-api-key'];
 
-    if (!chaveRecebida || chaveRecebida !== CHAVE_MESTRA) {
+    if (!chaveRecebida || chaveRecebida.trim() !== CHAVE_MESTRA.trim()) {
         console.log("⚠️ Tentativa de POST negada: Chave inválida.");
         return res.status(401).json({
             status: "erro",

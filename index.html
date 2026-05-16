@@ -24,10 +24,8 @@
 <body>
     <h1>Painel de Teste - TOA-TOA</h1>
 
-    <div class="config">
-        <label>Chave API (CHAVE_MESTRA):</label>
-        <input type="password" id="apiKey" placeholder="Insira a sua chave de comunicação">
-    </div>
+    <!-- Chave API fixada internamente para permitir comunicação automática e segura -->
+    <input type="hidden" id="apiKey" value="sua_chave_de_comunicacao_php_node">
 
     <h2>Novo Produto</h2>
     <form id="produtoForm">
@@ -130,7 +128,7 @@
 
         async function carregarProdutos() {
             const tbody = document.querySelector('#produtosTable tbody');
-            tbody.innerHTML = '<tr><td colspan="4">Carregando...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5">Carregando...</td></tr>';
             
             try {
                 const res = await fetch('/toa-toa-api-supabase', {
@@ -157,10 +155,10 @@
                         tbody.appendChild(tr);
                     });
                 } else {
-                    tbody.innerHTML = `<tr><td colspan="4">Erro: ${result.mensagem}</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="5">Erro: ${result.mensagem}</td></tr>`;
                 }
             } catch (err) {
-                tbody.innerHTML = `<tr><td colspan="4">Erro de conexão</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5">Erro de conexão</td></tr>`;
             }
         }
 
@@ -232,6 +230,9 @@
                 alert('Erro de conexão ao buscar detalhes: ' + err.message);
             }
         }
+
+        // Inicia a listagem automaticamente ao carregar a página
+        window.onload = carregarProdutos;
     </script>
 </body>
 </html>

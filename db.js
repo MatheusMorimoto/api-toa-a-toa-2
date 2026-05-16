@@ -214,7 +214,10 @@ app.put('/toa-toa-api-supabase/:id', upload.single('imagem'), async (req, res) =
     const chaveRecebida = req.headers['x-api-key'];
 
     if (!chaveRecebida || chaveRecebida.trim() !== CHAVE_MESTRA.trim()) {
-        return res.status(401).json({ status: "erro", mensagem: "Acesso negado." });
+        return res.status(401).json({ 
+            status: "erro", 
+            mensagem: "Acesso negado: Chave API inválida." 
+        });
     }
 
     const {
@@ -281,7 +284,10 @@ app.delete('/toa-toa-api-supabase/:id', async (req, res) => {
     const chaveRecebida = req.headers['x-api-key'];
 
     if (!chaveRecebida || chaveRecebida.trim() !== CHAVE_MESTRA.trim()) {
-        return res.status(401).json({ status: "erro", mensagem: "Acesso negado." });
+        return res.status(401).json({ 
+            status: "erro", 
+            mensagem: "Acesso negado: Chave API inválida." 
+        });
     }
 
     try {
