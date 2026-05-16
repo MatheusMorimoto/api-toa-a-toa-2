@@ -39,6 +39,17 @@ git add .
 git commit -m "Update: Implementação de Storage e CRUD completo"
 git push origin main
 ```
+## ⚙️ Configuração do Ambiente (.env)
+Atualize as variáveis de ambiente no seu painel do Render ou arquivo `.env` local com os novos dados:
+
+```ini
+SUPABASE_URL=https://idxyfkeodaettqbjuiak.supabase.co
+SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlkeHlma2VvZGFldHRxYmp1aWFrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODYyNTE5MCwiZXhwIjoyMDk0MjAxMTkwfQ.NHpC4HgxdbxUMYUJSu10rPKdss4jHZZa3IK_ojjFBIM
+CHAVE_MESTRA=sua_chave_de_comunicacao_php_node
+```
+
+> **Nota Técnica:** A `SUPABASE_KEY` configurada é a **Service Role Key**, garantindo que a API tenha permissão total para gerenciar fotos no Storage.
 
 ---
 **URL de Produção:** `https://api-toa-a-toa-2.onrender.com`
+**Endpoint Local:** http://festa:3000/toa-toa-api-supabase
