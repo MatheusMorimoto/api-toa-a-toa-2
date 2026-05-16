@@ -111,8 +111,16 @@ app.get('/toa-toa-api-supabase', async (req, res) => {
 });
 
 // 1.1 Rota para Buscar por ID (GET)
-app.get('/toa-toa-api-supabase/:id', async (req, res) => {
-    const { id } = req.params;
+app.get('/toa-toa-api-supabase/:id?', async (req, res) => {
+    const id = req.params.id || req.query.id;
+
+    if (!id) {
+        return res.status(400).json({
+            status: "erro",
+            mensagem: "ID do produto não informado."
+        });
+    }
+
     const chaveRecebida = req.headers['x-api-key'];
 
     if (!chaveRecebida || chaveRecebida.trim() !== CHAVE_MESTRA.trim()) {
@@ -209,8 +217,16 @@ app.post('/toa-toa-api-supabase', upload.single('imagem'), async (req, res) => {
 });
 
 // 2.1 Rota para Atualizar (PUT)
-app.put('/toa-toa-api-supabase/:id', upload.single('imagem'), async (req, res) => {
-    const { id } = req.params;
+app.put('/toa-toa-api-supabase/:id?', upload.single('imagem'), async (req, res) => {
+    const id = req.params.id || req.query.id || req.body.id;
+
+    if (!id) {
+        return res.status(400).json({
+            status: "erro",
+            mensagem: "ID do produto não informado para atualização."
+        });
+    }
+
     const chaveRecebida = req.headers['x-api-key'];
 
     if (!chaveRecebida || chaveRecebida.trim() !== CHAVE_MESTRA.trim()) {
@@ -279,8 +295,16 @@ app.put('/toa-toa-api-supabase/:id', upload.single('imagem'), async (req, res) =
 });
 
 // 3. Rota para Deletar (DELETE)
-app.delete('/toa-toa-api-supabase/:id', async (req, res) => {
-    const { id } = req.params;
+app.delete('/toa-toa-api-supabase/:id?', async (req, res) => {
+    const id = req.params.id || req.query.id || req.body.id;
+
+    if (!id) {
+        return res.status(400).json({
+            status: "erro",
+            mensagem: "ID do produto não informado para exclusão."
+        });
+    }
+
     const chaveRecebida = req.headers['x-api-key'];
 
     if (!chaveRecebida || chaveRecebida.trim() !== CHAVE_MESTRA.trim()) {
