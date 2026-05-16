@@ -3,7 +3,13 @@
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // No Render, substitua pela URL do seu Web Service Node.js
-    $url = "https://api-toa-a-toa-2.onrender.com/toa-toa-api-supabase";
+    $baseUrl = "https://api-toa-a-toa-2.onrender.com/toa-toa-api-supabase";
+    $id = $_POST['id'] ?? null;
+    
+    // Se tiver ID, a URL muda para incluir o ID e o método será PUT
+    $url = $id ? "$baseUrl/$id" : $baseUrl;
+    $metodo = $id ? 'PUT' : 'POST';
+
     // É recomendável usar variáveis de ambiente no PHP também
     $apiKey = getenv('CHAVE_MESTRA') ?: "sua_chave_de_comunicacao_php_node";
 
@@ -27,7 +33,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 3. Envia via cURL para o Node.js
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
+    
+    if ($id) {
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+    } else {
+        curl_setopt($ch, CURLOPT_POST, true);
+    }
+
     curl_setopt($ch, CURLOPT_POSTFIELDS, $dadosProduto); // Envia como multipart/form-data
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
         "x-api-key: $apiKey"
