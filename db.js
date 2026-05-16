@@ -28,6 +28,51 @@ if (!SUPABASE_URL || !SUPABASE_KEY || !CHAVE_MESTRA) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// Nome do bucket configurado no painel do Supabase
+const BUCKET_NAME = 'toa-toa-moda-festa';
+
+/**
+ * Função que recebe o arquivo do Multer (em memória) e joga para o Bucket
+ */
+async function uploadStorage(file) {
+    // 1. Gera um nome único para evitar sobrescrever fotos com o mesmo nome
+    const extensao = file.originalname.split('.').pop();
+    const novoNomeArquivo = `${Date.now()}_vestido.${extensao}`;
+
+    // 2. Faz o upload do binário direto da memória para o Supabase Storage
+    const { data, error } = await supabase.storage
+        .from(BUCKET_NAME)
+        .upload(novoNomeArquivo, file.buffer, {
+            contentType: file.mimetype,
+            upsert: false
+        });
+
+    if (error) {
+        throw new Error('Erro ao subir para o Storage: ' + error.message);
+    }
+
+    // 3. Pega a URL pública
+    const { data: publicUrlData } = supabase.storage
+        .from(BUCKET_NAME)
+        .getPublicUrl(novoNomeArquivo);
+
+    return publicUrlData.publicUrl;
+}
+
+/**
+ * Lógica de exclusão automática
+ */
+async function deletarFotoStorage(urlCompleta) {
+    const nomeArquivo = urlCompleta.split('/').pop();
+    const { error } = await supabase.storage
+        .from(BUCKET_NAME)
+        .remove([nomeArquivo]);
+
+    if (error) {
+        console.error('Aviso: Não foi possível deletar o arquivo físico:', error.message);
+    }
+}
+
 // Rota para servir a tela de teste (Frontend)
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
@@ -124,22 +169,12 @@ app.post('/toa-toa-api-supabase', upload.single('imagem'), async (req, res) => {
     let urlImagem = req.body.imagem || 'placeholder.jpg';
 
     try {
-        // Lógica de Upload para o Storage
+        // 1. Envia para o Storage e pega a URL Pública se houver arquivo
         if (req.file) {
-            const fileExt = path.extname(req.file.originalname);
-            const fileName = `${Date.now()}${fileExt}`;
-            const filePath = `produtos/${fileName}`;
-
-            const { error: uploadError } = await supabase.storage
-                .from('produtos')
-                .upload(filePath, req.file.buffer, { contentType: req.file.mimetype });
-
-            if (uploadError) throw uploadError;
-
-            const { data: publicUrlData } = supabase.storage.from('produtos').getPublicUrl(filePath);
-            urlImagem = publicUrlData.publicUrl;
+            urlImagem = await uploadStorage(req.file);
         }
 
+        // 2. Salva no Banco de Dados (Supabase DB) usando a URL gerada
         const { data, error } = await supabase
             .from('produtos')
             .insert([
@@ -187,9 +222,8 @@ app.delete('/toa-toa-api-supabase/:id', async (req, res) => {
         const { data: produto } = await supabase.from('produtos').select('imagem').eq('id', id).single();
 
         if (produto && produto.imagem && produto.imagem.includes('supabase.co')) {
-            // 2. Extrai o nome do arquivo da URL para deletar do Storage
-            const nomeArquivo = produto.imagem.split('/').pop();
-            await supabase.storage.from('produtos').remove([`produtos/${nomeArquivo}`]);
+            // 2. Utiliza a função de limpeza de disco para remover o arquivo físico
+            await deletarFotoStorage(produto.imagem);
         }
 
         // 3. Deleta do banco
