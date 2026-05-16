@@ -26,6 +26,7 @@
 
     <h2>Novo Produto</h2>
     <form id="produtoForm">
+        <input type="hidden" id="produtoId"> <!-- Campo oculto para ID na edição -->
         <input type="text" id="nomeProduto" placeholder="Nome do Produto" required>
         <input type="text" id="categoria" placeholder="Categoria">
         <input type="date" id="validade">
@@ -45,6 +46,7 @@
                 <th>Nome</th>
                 <th>Preço</th>
                 <th>Qtd</th>
+                <th>Ações</th>
             </tr>
         </thead>
         <tbody></tbody>
@@ -56,6 +58,8 @@
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const id = document.getElementById('produtoId').value;
+            
             const data = {
                 nomeProduto: document.getElementById('nomeProduto').value,
                 categoria: document.getElementById('categoria').value,
@@ -67,9 +71,12 @@
                 imagem: 'placeholder.jpg'
             };
 
+            const url = id ? `/toa-toa-api-supabase/${id}` : '/toa-toa-api-supabase';
+            const method = id ? 'PUT' : 'POST';
+
             try {
-                const res = await fetch('/toa-toa-api-supabase', {
-                    method: 'POST',
+                const res = await fetch(url, {
+                    method: method,
                     headers: {
                         'Content-Type': 'application/json',
                         'x-api-key': apiKeyInput.value
@@ -78,7 +85,11 @@
                 });
                 const result = await res.json();
                 alert(result.mensagem || result.status);
-                if (res.ok) carregarProdutos();
+                if (res.ok) {
+                    form.reset();
+                    document.getElementById('produtoId').value = '';
+                    carregarProdutos();
+                }
             } catch (err) {
                 alert('Erro ao salvar: ' + err.message);
             }
@@ -97,15 +108,19 @@
                 if (result.status === "sucesso") {
                     tbody.innerHTML = '';
                     result.dados.forEach(p => { // Adiciona um evento de clique para buscar detalhes
-                        const row = `<tr>
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
                             <td>${p.id}</td>
                             <td>${p.nome}</td>
                             <td>R$ ${p.preco_unitario}</td>
                             <td>${p.quantidade}</td>
-                        </tr>`;
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = row;
-                        tr.onclick = () => mostrarDetalhesProduto(p.id); // Adiciona o evento de clique
+                            <td>
+                                <button onclick="event.stopPropagation(); prepararEdicao(${p.id})" style="background:#ffc107; width:auto; color:black; padding:2px 5px;">Editar</button>
+                                <button onclick="event.stopPropagation(); deletarProduto(${p.id})" style="background:#dc3545; width:auto; padding:2px 5px;">Excluir</button>
+                            </td>
+                        `;
+                        tr.style.cursor = "pointer";
+                        tr.onclick = () => mostrarDetalhesProduto(p.id);
                         tbody.appendChild(tr);
                     });
                 } else {
@@ -113,6 +128,48 @@
                 }
             } catch (err) {
                 tbody.innerHTML = `<tr><td colspan="4">Erro de conexão</td></tr>`;
+            }
+        }
+
+        async function deletarProduto(id) {
+            if (!confirm('Tem certeza que deseja excluir este produto?')) return;
+            
+            try {
+                const res = await fetch(`/toa-toa-api-supabase/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'x-api-key': apiKeyInput.value }
+                });
+                const result = await res.json();
+                alert(result.mensagem);
+                carregarProdutos();
+            } catch (err) {
+                alert('Erro ao excluir: ' + err.message);
+            }
+        }
+
+        async function prepararEdicao(id) {
+            try {
+                const res = await fetch(`/toa-toa-api-supabase/${id}`, {
+                    headers: { 'x-api-key': apiKeyInput.value }
+                });
+                const result = await res.json();
+                
+                if (result.status === "sucesso") {
+                    const p = result.dados;
+                    document.getElementById('produtoId').value = p.id;
+                    document.getElementById('nomeProduto').value = p.nome;
+                    document.getElementById('categoria').value = p.categoria || '';
+                    document.getElementById('validade').value = p.validade || '';
+                    document.getElementById('quantidade').value = p.quantidade;
+                    document.getElementById('precoUnitario').value = p.preco_unitario;
+                    document.getElementById('precoPacote').value = p.preco_pacote;
+                    document.getElementById('descricao').value = p.descricao || '';
+                    
+                    window.scrollTo(0, 0);
+                    document.querySelector('h2').innerText = "Editando Produto #" + p.id;
+                }
+            } catch (err) {
+                alert('Erro ao carregar dados para edição.');
             }
         }
 

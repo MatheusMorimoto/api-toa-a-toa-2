@@ -208,6 +208,73 @@ app.post('/toa-toa-api-supabase', upload.single('imagem'), async (req, res) => {
     }
 });
 
+// 2.1 Rota para Atualizar (PUT)
+app.put('/toa-toa-api-supabase/:id', upload.single('imagem'), async (req, res) => {
+    const { id } = req.params;
+    const chaveRecebida = req.headers['x-api-key'];
+
+    if (!chaveRecebida || chaveRecebida.trim() !== CHAVE_MESTRA.trim()) {
+        return res.status(401).json({ status: "erro", mensagem: "Acesso negado." });
+    }
+
+    const {
+        nomeProduto, categoria, validade,
+        quantidade, precoUnitario, precoPacote, descricao
+    } = req.body;
+
+    try {
+        // 1. Busca o produto atual para verificar a imagem antiga
+        const { data: produtoAntigo } = await supabase
+            .from('produtos')
+            .select('imagem')
+            .eq('id', id)
+            .single();
+
+        let urlImagem = req.body.imagem || (produtoAntigo ? produtoAntigo.imagem : 'placeholder.jpg');
+
+        // 2. Se um novo arquivo foi enviado, faz upload e remove o antigo
+        if (req.file) {
+            // Remove a imagem antiga do storage se não for o placeholder
+            if (produtoAntigo && produtoAntigo.imagem && produtoAntigo.imagem.includes('supabase.co')) {
+                await deletarFotoStorage(produtoAntigo.imagem);
+            }
+            // Sobe a nova
+            urlImagem = await uploadStorage(req.file);
+        }
+
+        // 3. Atualiza no banco de dados
+        const { data, error } = await supabase
+            .from('produtos')
+            .update({
+                nome: nomeProduto,
+                categoria: categoria,
+                validade: validade,
+                quantidade: parseInt(quantidade) || 0,
+                preco_unitario: parseFloat(precoUnitario) || 0.00,
+                preco_pacote: parseFloat(precoPacote) || 0.00,
+                descricao: descricao,
+                imagem: urlImagem
+            })
+            .eq('id', id)
+            .select();
+
+        if (error) throw error;
+
+        res.json({
+            status: "sucesso",
+            mensagem: "Produto atualizado com sucesso!",
+            dados: data
+        });
+    } catch (error) {
+        console.error("❌ Erro ao atualizar:", error);
+        res.status(500).json({
+            status: "erro",
+            mensagem: "Erro ao atualizar produto.",
+            detalhe: error.message
+        });
+    }
+});
+
 // 3. Rota para Deletar (DELETE)
 app.delete('/toa-toa-api-supabase/:id', async (req, res) => {
     const { id } = req.params;
