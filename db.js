@@ -333,6 +333,93 @@ app.delete('/toa-toa-api-supabase/:id?', async (req, res) => {
     }
 });
 
+
+// --- ROTAS PARA CLIENTES (SQL BASE: CÓDIGO 2 JSONB) ---
+
+// 1. Listar Clientes (GET)
+app.get('/toa-toa-clientes', async (req, res) => {
+    const chaveRecebida = req.headers['x-api-key'];
+    if (!chaveRecebida || chaveRecebida.trim() !== CHAVE_MESTRA.trim()) {
+        return res.status(401).json({ status: "erro", mensagem: "Acesso negado: Chave API inválida." });
+    }
+    try {
+        const { data, error } = await supabase.from('clientes').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
+        res.json({ status: "sucesso", dados: data });
+    } catch (error) {
+        console.error("❌ Erro Clientes:", error.message);
+        res.status(500).json({ status: "erro", mensagem: "Erro ao buscar clientes." });
+    }
+});
+
+// 2. Buscar Cliente por ID (GET)
+app.get('/toa-toa-clientes/:id?', async (req, res) => {
+    const id = req.params.id || req.query.id;
+    if (!id) return res.status(400).json({ status: "erro", mensagem: "ID não informado." });
+    
+    const chaveRecebida = req.headers['x-api-key'];
+    if (!chaveRecebida || chaveRecebida.trim() !== CHAVE_MESTRA.trim()) {
+        return res.status(401).json({ status: "erro", mensagem: "Acesso negado." });
+    }
+
+    try {
+        const { data, error } = await supabase.from('clientes').select('*').eq('id', id).single();
+        if (error) throw error;
+        res.json({ status: "sucesso", dados: data });
+    } catch (error) {
+        res.status(500).json({ status: "erro", mensagem: "Erro ao buscar cliente." });
+    }
+});
+
+// 3. Salvar Cliente (POST)
+app.post('/toa-toa-clientes', async (req, res) => {
+    const chaveRecebida = req.headers['x-api-key'];
+    if (!chaveRecebida || chaveRecebida.trim() !== CHAVE_MESTRA.trim()) {
+        return res.status(401).json({ status: "erro", mensagem: "Acesso negado." });
+    }
+    try {
+        const { data, error } = await supabase.from('clientes').insert([req.body]).select();
+        if (error) throw error;
+        res.json({ status: "sucesso", mensagem: "Cliente cadastrado com sucesso!", dados: data });
+    } catch (error) {
+        res.status(500).json({ status: "erro", mensagem: "Erro ao salvar cliente.", detalhe: error.message });
+    }
+});
+
+// 4. Atualizar Cliente (PUT)
+app.put('/toa-toa-clientes/:id?', async (req, res) => {
+    const id = req.params.id || req.query.id || req.body.id;
+    if (!id) return res.status(400).json({ status: "erro", mensagem: "ID não informado." });
+    const chaveRecebida = req.headers['x-api-key'];
+    if (!chaveRecebida || chaveRecebida.trim() !== CHAVE_MESTRA.trim()) {
+        return res.status(401).json({ status: "erro", mensagem: "Acesso negado." });
+    }
+    try {
+        const { data, error } = await supabase.from('clientes').update(req.body).eq('id', id).select();
+        if (error) throw error;
+        res.json({ status: "sucesso", mensagem: "Dados do cliente atualizados!", dados: data });
+    } catch (error) {
+        res.status(500).json({ status: "erro", mensagem: "Erro ao atualizar cliente.", detalhe: error.message });
+    }
+});
+
+// 5. Deletar Cliente (DELETE)
+app.delete('/toa-toa-clientes/:id?', async (req, res) => {
+    const id = req.params.id || req.query.id || req.body.id;
+    if (!id) return res.status(400).json({ status: "erro", mensagem: "ID não informado." });
+    const chaveRecebida = req.headers['x-api-key'];
+    if (!chaveRecebida || chaveRecebida.trim() !== CHAVE_MESTRA.trim()) {
+        return res.status(401).json({ status: "erro", mensagem: "Acesso negado." });
+    }
+    try {
+        const { error } = await supabase.from('clientes').delete().eq('id', id);
+        if (error) throw error;
+        res.json({ status: "sucesso", mensagem: "Cliente removido com sucesso!" });
+    } catch (error) {
+        res.status(500).json({ status: "erro", detalhe: error.message });
+    }
+});
+
 // Inicialização para Render (0.0.0.0 é essencial)
 app.listen(port, '0.0.0.0', () => {
     console.log(`🚀 API TOA-TOA Online na porta ${port}`);

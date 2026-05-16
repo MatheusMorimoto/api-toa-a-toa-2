@@ -3,27 +3,41 @@
 API híbrida (PHP + Node.js) integrada ao **Supabase DB** e **Supabase Storage**.
 
 ## 🛠️ Novidades da Versão
-- **Integração com Storage:** Upload automático de fotos para o bucket `produtos`.
-- **Processamento Binário:** Migração de JSON para `multipart/form-data` no envio PHP -> Node.js.
-- **Ciclo CRUD Completo:** Implementação de rotas para Listar, Buscar por ID, Salvar (com foto) e Deletar (com limpeza de Storage).
+- **Integração com Storage:** Upload automático de fotos para o bucket `toa-toa-moda-festa`.
+- **Processamento Binário:** Suporte a `multipart/form-data` para envio de arquivos reais via PHP (CURLFile) ou Formulários.
+- **Ciclo CRUD Completo:** Rotas para Listar, Buscar, Salvar, Atualizar e Deletar com persistência de dados e arquivos (Produtos).
+- **Gestão de Clientes:** Novo módulo CRUD para gerenciamento de clientes com suporte a múltiplos contatos via JSONB.
+- **Gestão de Ativos:** Limpeza automática de arquivos físicos no Storage ao excluir ou substituir fotos de produtos.
 
 ## 🔗 Endpoints da API
 
+### Produtos
 | Método | Endpoint | Descrição |
 | :--- | :--- | :--- |
 | **GET** | `/toa-toa-api-supabase` | Lista todos os produtos |
-| **GET** | `/toa-toa-api-supabase/:id` | Busca detalhes de um produto específico |
+| **GET** | `/toa-toa-api-supabase/:id?` | Busca detalhes por ID (URL ou Query String) |
 | **POST** | `/toa-toa-api-supabase` | Cadastra produto e faz upload da imagem |
-| **DELETE** | `/toa-toa-api-supabase/:id` | Remove o produto e apaga a foto do Storage |
+| **PUT** | `/toa-toa-api-supabase/:id?` | Atualiza dados e substitui imagem se necessário |
+| **DELETE** | `/toa-toa-api-supabase/:id?` | Remove o produto e apaga a foto do Storage |
+
+### Clientes
+| Método | Endpoint | Descrição |
+| :--- | :--- | :--- |
+| **GET** | `/toa-toa-clientes` | Lista todos os clientes |
+| **GET** | `/toa-toa-clientes/:id?` | Busca detalhes de um cliente |
+| **POST** | `/toa-toa-clientes` | Cadastra novo cliente |
+| **PUT** | `/toa-toa-clientes/:id?` | Atualiza dados do cliente |
+| **DELETE** | `/toa-toa-clientes/:id?` | Remove o cliente do banco |
 
 ## 🔐 Segurança
 Todas as requisições exigem o header:
-`x-api-key: [SUA_CHAVE_MESTRA]`
+`x-api-key: [VALOR_DA_CHAVE_MESTRA]`
+
+A **Chave Mestra** é o segredo compartilhado entre o cliente (PHP/Frontend) e o servidor (Node.js). Ela garante que apenas requisições autorizadas manipulem o estoque.
 
 ## 📂 Estrutura de Storage
-- **Bucket:** `produtos`
-- **Pasta:** `produtos/`
-- **Nomenclatura:** `timestamp-nomeoriginal.ext` (para evitar duplicidade).
+- **Bucket:** `toa-toa-moda-festa`
+- **Nomenclatura:** `timestamp_vestido.ext` (evita conflitos de nomes).
 
 ## 🚀 Comandos Úteis de Manutenção
 
