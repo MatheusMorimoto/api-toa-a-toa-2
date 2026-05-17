@@ -9,6 +9,13 @@ API híbrida (PHP + Node.js) integrada ao **Supabase DB** e **Supabase Storage**
 - **Gestão de Clientes:** Novo módulo CRUD para gerenciamento de clientes com suporte a múltiplos contatos via JSONB.
 - **Gestão de Ativos:** Limpeza automática de arquivos físicos no Storage ao excluir ou substituir fotos de produtos.
 
+## 🖥️ Painel Administrativo (index.html)
+O projeto conta com uma interface de gestão integrada acessível na raiz (`/`).
+
+- **Gestão Unificada:** Controle de Produtos e Clientes em uma única página.
+- **Guia Técnico Local:** Manual de operações HTTP embutido no final da interface.
+- **Comunicação Segura:** Chave API configurada internamente para facilitar o uso administrativo.
+
 ## 🔗 Endpoints da API
 
 ### Produtos
