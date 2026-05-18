@@ -44,6 +44,7 @@ async function uploadStorage(file) {
         .from(BUCKET_NAME)
         .upload(novoNomeArquivo, file.buffer, {
             contentType: file.mimetype,
+            cacheControl: '3600',
             upsert: false
         });
 
