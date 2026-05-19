@@ -214,6 +214,7 @@ app.post('/toa-toa-api-supabase', upload.single('imagem'), async (req, res) => {
             .from('produtos')
             .insert([
                 {
+                    cod: codProduto,
                     nome: nomeProduto,
                     categoria: categoria,
                     validade: validade,
@@ -237,8 +238,8 @@ app.post('/toa-toa-api-supabase', upload.single('imagem'), async (req, res) => {
         console.error("❌ Detalhes do Erro:", error);
         res.status(500).json({
             status: "erro",
-            mensagem: "Erro no banco de dados",
-            detalhe: error.message || error.details
+            mensagem: "Erro no banco de dados: " + (error.message || ""),
+            detalhe: error.details || error.hint || "Verifique as restrições da tabela no Supabase."
         });
     }
 });
@@ -292,6 +293,7 @@ app.put('/toa-toa-api-supabase/:id?', upload.single('imagem'), async (req, res) 
         const { data, error } = await supabase
             .from('produtos')
             .update({
+                cod: codProduto,
                 nome: nomeProduto,
                 categoria: categoria,
                 validade: validade,
@@ -315,8 +317,8 @@ app.put('/toa-toa-api-supabase/:id?', upload.single('imagem'), async (req, res) 
         console.error("❌ Erro ao atualizar:", error);
         res.status(500).json({
             status: "erro",
-            mensagem: "Erro ao atualizar produto.",
-            detalhe: error.message
+            mensagem: "Erro ao atualizar produto: " + (error.message || ""),
+            detalhe: error.details || "Verifique se o ID existe e se os dados são válidos."
         });
     }
 });

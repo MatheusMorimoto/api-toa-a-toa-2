@@ -88,6 +88,8 @@ Atualize as variáveis de ambiente no seu painel do Render ou arquivo `.env` loc
 ```ini
 SUPABASE_URL=https://idxyfkeodaettqbjuiak.supabase.co
 SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlkeHlma2VvZGFldHRxYmp1aWFrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODYyNTE5MCwiZXhwIjoyMDk0MjAxMTkwfQ.NHpC4HgxdbxUMYUJSu10rPKdss4jHZZa3IK_ojjFBIM
+# Chave Pública (para referência se necessário)
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlkeHlma2VvZGFldHRxYmp1aWFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MjUxOTAsImV4cCI6MjA5NDIwMTE5MH0.okEGTUsCvLfB4CCb3p_apul0QcI_VPwhuSYO-uxU1_k
 CHAVE_MESTRA=sua_chave_de_comunicacao_php_node
 ```
 
