@@ -214,7 +214,6 @@ app.post('/toa-toa-api-supabase', upload.single('imagem'), async (req, res) => {
             .from('produtos')
             .insert([
                 {
-                    cod: codProduto,
                     nome: nomeProduto,
                     categoria: categoria,
                     validade: validade,
@@ -293,7 +292,6 @@ app.put('/toa-toa-api-supabase/:id?', upload.single('imagem'), async (req, res) 
         const { data, error } = await supabase
             .from('produtos')
             .update({
-                cod: codProduto,
                 nome: nomeProduto,
                 categoria: categoria,
                 validade: validade,
