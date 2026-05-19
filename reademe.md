@@ -2,7 +2,12 @@
 
 API híbrida (PHP + Node.js) integrada ao **Supabase DB** e **Supabase Storage**.
 
-## 🛠️ Novidades da Versão
+## 🔗 URL de Produção
+A API está ativa em: [https://api-toa-a-toa-2.onrender.com](https://api-toa-a-toa-2.onrender.com)
+
+**Supabase Host:** `https://idxyfkeodaettqbjuiak.supabase.co`
+
+## �️ Novidades da Versão
 - **Integração com Storage:** Upload automático de fotos para o bucket `toa-toa-moda-festa`.
 - **Processamento Binário:** Suporte a `multipart/form-data` para envio de arquivos reais via PHP (CURLFile) ou Formulários.
 - **Ciclo CRUD Completo:** Rotas para Listar, Buscar, Salvar, Atualizar e Deletar com persistência de dados e arquivos (Produtos).
@@ -45,6 +50,11 @@ A **Chave Mestra** é o segredo compartilhado entre o cliente (PHP/Frontend) e o
 ## 📂 Estrutura de Storage
 - **Bucket:** `toa-toa-moda-festa`
 - **Nomenclatura:** `timestamp_vestido.ext` (evita conflitos de nomes).
+- **Pasta de Destino:** `produtos/`
+- **Caminho de Armazenamento:** `produtos/timestamp_vestido.ext`
+- **Configurações de Upload:** `cacheControl: '3600'`, `upsert: false`.
+- **Endpoint S3 (API):** `https://idxyfkeodaettqbjuiak.storage.supabase.co/storage/v1/s3`
+- **Região Física:** `sa-east-1` (São Paulo)
 
 ## 🚀 Comandos Úteis de Manutenção
 
