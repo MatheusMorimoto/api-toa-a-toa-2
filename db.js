@@ -42,11 +42,11 @@ async function uploadStorage(file) {
     const extensao = file.originalname.split('.').pop();
     const novoNomeArquivo = `${Date.now()}_vestido.${extensao}`;
 
-    // 2. Realiza o upload para o bucket 'toa-toa-moda-festa' na região sa-east-1
-    const { data, error } = await supabase
-        .storage
-        .from(BUCKET_NAME)
-        .upload(novoNomeArquivo, file.buffer, {
+    // 1. Aponta para o seu bucket e 2. Define o caminho e o arquivo
+    // Mantendo a sintaxe exata do seu exemplo de conexão
+    const { data, error } = await supabase.storage
+        .from('toa-toa-moda-festa') 
+        .upload(`produtos/${novoNomeArquivo}`, file.buffer, { 
             cacheControl: '3600',
             upsert: false,
             contentType: file.mimetype // Mantém o tipo do arquivo original
