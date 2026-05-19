@@ -39,6 +39,8 @@
             <input type="number" step="0.01" id="precoUnitario" placeholder="Preço Unitário">
             <input type="number" step="0.01" id="precoPacote" placeholder="Preço Pacote">
             <textarea id="descricao" placeholder="Descrição"></textarea>
+            <label for="imagemProduto" style="font-size: 0.9em; color: #666;">Foto do Produto:</label>
+            <input type="file" id="imagemProduto" accept="image/*">
             <button type="submit">Salvar Produto</button>
         </form>
 
@@ -48,6 +50,7 @@
             <thead>
                 <tr>
                     <th>ID</th>
+                    <th>Foto</th>
                     <th>Nome</th>
                     <th>Preço</th>
                     <th>Qtd</th>
@@ -131,17 +134,21 @@
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('produtoId').value;
+            const fileInput = document.getElementById('imagemProduto');
             
-            const data = {
-                nomeProduto: document.getElementById('nomeProduto').value,
-                categoria: document.getElementById('categoria').value,
-                validade: document.getElementById('validade').value,
-                quantidade: document.getElementById('quantidade').value,
-                precoUnitario: document.getElementById('precoUnitario').value,
-                precoPacote: document.getElementById('precoPacote').value,
-                descricao: document.getElementById('descricao').value,
-                imagem: 'placeholder.jpg'
-            };
+            // Utilizamos FormData para permitir o envio do arquivo binário
+            const formData = new FormData();
+            formData.append('nomeProduto', document.getElementById('nomeProduto').value);
+            formData.append('categoria', document.getElementById('categoria').value);
+            formData.append('validade', document.getElementById('validade').value);
+            formData.append('quantidade', document.getElementById('quantidade').value);
+            formData.append('precoUnitario', document.getElementById('precoUnitario').value);
+            formData.append('precoPacote', document.getElementById('precoPacote').value);
+            formData.append('descricao', document.getElementById('descricao').value);
+            
+            if (fileInput.files[0]) {
+                formData.append('imagem', fileInput.files[0]);
+            }
 
             const url = id ? `/toa-toa-api-supabase/${id}` : '/toa-toa-api-supabase';
             const method = id ? 'PUT' : 'POST';
@@ -150,10 +157,10 @@
                 const res = await fetch(url, {
                     method: method,
                     headers: {
-                        'Content-Type': 'application/json',
+                        // O navegador define o Content-Type automaticamente para multipart/form-data com FormData
                         'x-api-key': apiKeyInput.value
                     },
-                    body: JSON.stringify(data)
+                    body: formData
                 });
                 const result = await res.json();
                 alert(result.mensagem || result.status);
@@ -169,7 +176,7 @@
 
         async function carregarProdutos() {
             const tbody = document.querySelector('#produtosTable tbody');
-            tbody.innerHTML = '<tr><td colspan="5">Carregando...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6">Carregando...</td></tr>';
             
             try {
                 const res = await fetch('/toa-toa-api-supabase', {
@@ -181,8 +188,10 @@
                     tbody.innerHTML = '';
                     result.dados.forEach(p => { // Adiciona um evento de clique para buscar detalhes
                         const tr = document.createElement('tr');
+                        const imgTag = p.imagem && p.imagem !== 'placeholder.jpg' ? `<img src="${p.imagem}" width="40" height="40" style="object-fit:cover; border-radius:4px; vertical-align:middle;">` : '🖼️';
                         tr.innerHTML = `
                             <td>${p.id}</td>
+                            <td>${imgTag}</td>
                             <td>${p.nome}</td>
                             <td>R$ ${p.preco_unitario}</td>
                             <td>${p.quantidade}</td>
@@ -196,10 +205,10 @@
                         tbody.appendChild(tr);
                     });
                 } else {
-                    tbody.innerHTML = `<tr><td colspan="5">Erro: ${result.mensagem}</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="6">Erro: ${result.mensagem}</td></tr>`;
                 }
             } catch (err) {
-                tbody.innerHTML = `<tr><td colspan="5">Erro de conexão</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6">Erro de conexão</td></tr>`;
             }
         }
 
@@ -236,6 +245,7 @@
                     document.getElementById('precoUnitario').value = p.preco_unitario;
                     document.getElementById('precoPacote').value = p.preco_pacote;
                     document.getElementById('descricao').value = p.descricao || '';
+                    document.getElementById('imagemProduto').value = ''; // Limpa o seletor de arquivo
                     
                     window.scrollTo(0, 0);
                     document.querySelector('h2').innerText = "Editando Produto #" + p.id;

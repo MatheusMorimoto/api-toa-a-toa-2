@@ -35,35 +35,55 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const BUCKET_NAME = 'toa-toa-moda-festa';
 
 /**
- * Função que recebe o arquivo do Multer (em memória) e joga para o Bucket
+ * SERVIÇO DE STORAGE (MODULAR)
+ * Gerencia uploads e recuperação de URLs no Supabase Storage
  */
 async function uploadStorage(file) {
-    // 1. Gera um nome único para evitar sobrescrever fotos com o mesmo nome
-    const extensao = file.originalname.split('.').pop();
-    const novoNomeArquivo = `${Date.now()}_vestido.${extensao}`;
-    const caminhoArquivo = `produtos/${novoNomeArquivo}`;
+    try {
+        // 1. Definição do Nome e Caminho (Sanitização básica)
+        const extensao = file.originalname.split('.').pop();
+        const novoNomeArquivo = `${Date.now()}_vestido.${extensao}`;
+        const caminhoArquivo = `produtos/${novoNomeArquivo}`;
 
-    // 1. Aponta para o seu bucket 'toa-toa-moda-festa'
-    // 2. Define o caminho 'produtos/' e o corpo do arquivo
-    const { data, error } = await supabase
-        .storage
-        .from(BUCKET_NAME) 
-        .upload(caminhoArquivo, file.buffer, { 
-            cacheControl: '3600',
-            upsert: false,
-            contentType: file.mimetype // Mantém o tipo do arquivo original
-        });
+        // 2. Execução do Upload via SDK Oficial
+        const { data, error } = await supabase.storage
+            .from(BUCKET_NAME)
+            .upload(caminhoArquivo, file.buffer, {
+                cacheControl: '3600',
+                upsert: false,
+                contentType: file.mimetype
+            });
 
-    if (error) {
-        throw new Error('Erro ao subir para o Storage: ' + error.message);
+        if (error) throw error;
+
+        // 3. Retorno da URL (Exemplo getPublicUrl)
+        return await getFileUrl(caminhoArquivo);
+
+    } catch (error) {
+        console.error("[STORAGE ERROR]:", error.message);
+        throw new Error('Falha no upload para o Supabase Storage.');
+    }
+}
+
+/**
+ * Gera URLs de acesso. 
+ * getPublicUrl: Para buckets públicos.
+ * createSignedUrl: Para links privados temporários (ex: expira em 1h).
+ */
+async function getFileUrl(path, isPrivate = false) {
+    if (isPrivate) {
+        const { data, error } = await supabase.storage
+            .from(BUCKET_NAME)
+            .createSignedUrl(path, 3600); // Expira em 60 minutos
+        if (error) throw error;
+        return data.signedUrl;
     }
 
-    // 3. Pega a URL pública
-    const { data: publicUrlData } = supabase.storage
+    const { data } = supabase.storage
         .from(BUCKET_NAME)
-        .getPublicUrl(caminhoArquivo);
-
-    return publicUrlData.publicUrl;
+        .getPublicUrl(path);
+    
+    return data.publicUrl;
 }
 
 /**
