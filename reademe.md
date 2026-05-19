@@ -7,7 +7,7 @@ A API está ativa em: [https://api-toa-a-toa-2.onrender.com](https://api-toa-a-t
 
 **Supabase Host:** `https://idxyfkeodaettqbjuiak.supabase.co`
 
-## �️ Novidades da Versão
+## 🛠️ Novidades da Versão
 - **Integração com Storage:** Upload automático de fotos para o bucket `toa-toa-moda-festa`.
 - **Processamento Binário:** Suporte a `multipart/form-data` para envio de arquivos reais via PHP (CURLFile) ou Formulários.
 - **Ciclo CRUD Completo:** Rotas para Listar, Buscar, Salvar, Atualizar e Deletar com persistência de dados e arquivos (Produtos).
@@ -20,6 +20,14 @@ O projeto conta com uma interface de gestão integrada acessível na raiz (`/`).
 - **Gestão Unificada:** Controle de Produtos e Clientes em uma única página.
 - **Guia Técnico Local:** Manual de operações HTTP embutido no final da interface.
 - **Comunicação Segura:** Chave API configurada internamente para facilitar o uso administrativo.
+  > **Atenção:** A chave API está embutida no `index.html` para conveniência administrativa. Em um ambiente de produção, considere injetá-la de forma mais segura (ex: via variáveis de ambiente do servidor web ou autenticação de usuário).
+
+## ⚙️ Estrutura do Projeto
+- **`db.js`**: Arquivo principal da API Node.js, contendo toda a lógica de CRUD e integração com Supabase DB/Storage. É o ponto de entrada (`npm start`).
+- **`app.js`**: (Opcional/Exemplo) Uma versão simplificada da API, atualmente não utilizada como ponto de entrada principal.
+- **`index.html`**: Painel administrativo frontend para gerenciar produtos e clientes.
+- **`salvar_produto.php`**: Script PHP que atua como proxy para o envio de `multipart/form-data` para a API Node.js.
+- **`.env`**: Arquivo para configuração de variáveis de ambiente sensíveis.
 
 ## 🔗 Endpoints da API
 
