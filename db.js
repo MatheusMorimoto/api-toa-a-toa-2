@@ -41,12 +41,14 @@ async function uploadStorage(file) {
     // 1. Gera um nome único para evitar sobrescrever fotos com o mesmo nome
     const extensao = file.originalname.split('.').pop();
     const novoNomeArquivo = `${Date.now()}_vestido.${extensao}`;
+    const caminhoArquivo = `produtos/${novoNomeArquivo}`;
 
-    // 1. Aponta para o seu bucket e 2. Define o caminho e o arquivo
-    // Mantendo a sintaxe exata do seu exemplo de conexão
-    const { data, error } = await supabase.storage
-        .from('toa-toa-moda-festa') 
-        .upload(`produtos/${novoNomeArquivo}`, file.buffer, { 
+    // 1. Aponta para o seu bucket 'toa-toa-moda-festa'
+    // 2. Define o caminho 'produtos/' e o corpo do arquivo
+    const { data, error } = await supabase
+        .storage
+        .from(BUCKET_NAME) 
+        .upload(caminhoArquivo, file.buffer, { 
             cacheControl: '3600',
             upsert: false,
             contentType: file.mimetype // Mantém o tipo do arquivo original
@@ -59,7 +61,7 @@ async function uploadStorage(file) {
     // 3. Pega a URL pública
     const { data: publicUrlData } = supabase.storage
         .from(BUCKET_NAME)
-        .getPublicUrl(novoNomeArquivo);
+        .getPublicUrl(caminhoArquivo);
 
     return publicUrlData.publicUrl;
 }
@@ -71,7 +73,7 @@ async function deletarFotoStorage(urlCompleta) {
     const nomeArquivo = urlCompleta.split('/').pop();
     const { error } = await supabase.storage
         .from(BUCKET_NAME)
-        .remove([nomeArquivo]);
+        .remove([`produtos/${nomeArquivo}`]);
 
     if (error) {
         console.error('Aviso: Não foi possível deletar o arquivo físico:', error.message);
