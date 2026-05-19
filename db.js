@@ -39,13 +39,14 @@ async function uploadStorage(file) {
     const extensao = file.originalname.split('.').pop();
     const novoNomeArquivo = `${Date.now()}_vestido.${extensao}`;
 
-    // 2. Faz o upload do binário direto da memória para o Supabase Storage
-    const { data, error } = await supabase.storage
+    // 2. Faz o upload seguindo as configurações recomendadas
+    const { data, error } = await supabase
+        .storage
         .from(BUCKET_NAME)
         .upload(novoNomeArquivo, file.buffer, {
-            contentType: file.mimetype,
             cacheControl: '3600',
-            upsert: false
+            upsert: false,
+            contentType: file.mimetype // Mantido para garantir que o arquivo seja lido corretamente pelo navegador
         });
 
     if (error) {
