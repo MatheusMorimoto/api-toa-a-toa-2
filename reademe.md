@@ -49,12 +49,16 @@ A **Chave Mestra** é o segredo compartilhado entre o cliente (PHP/Frontend) e o
 
 ## 📂 Estrutura de Storage
 - **Bucket:** `toa-toa-moda-festa`
-- **Nomenclatura:** `timestamp_vestido.ext` (evita conflitos de nomes).
-- **Pasta de Destino:** `produtos/`
-- **Caminho de Armazenamento:** `produtos/timestamp_vestido.ext`
-- **Configurações de Upload:** `cacheControl: '3600'`, `upsert: false`.
-- **Endpoint S3 (API):** `https://idxyfkeodaettqbjuiak.storage.supabase.co/storage/v1/s3`
-- **Região Física:** `sa-east-1` (São Paulo)
+
+| Característica           | Detalhe                                                              |
+| :----------------------- | :------------------------------------------------------------------- |
+| **Bucket**               | `toa-toa-moda-festa`                                                 |
+| **Nomenclatura**         | `timestamp_vestido.ext` (evita conflitos de nomes)                   |
+| **Pasta de Destino**     | `produtos/`                                                          |
+| **Caminho Completo**     | `produtos/timestamp_vestido.ext`                                     |
+| **Configurações Upload** | `cacheControl: '3600'`, `upsert: false`                              |
+| **Endpoint S3 (API)**    | `https://idxyfkeodaettqbjuiak.storage.supabase.co/storage/v1/s3`     |
+| **Região Física**        | `sa-east-1` (São Paulo)                                              |
 
 ## 🚀 Comandos Úteis de Manutenção
 
