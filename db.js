@@ -20,12 +20,15 @@ app.use(express.static(path.join(__dirname, '.')));
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
 const CHAVE_MESTRA = process.env.CHAVE_MESTRA;
+const REGION = 'sa-east-1'; // Região configurada: São Paulo
 
 if (!SUPABASE_URL || !SUPABASE_KEY || !CHAVE_MESTRA) {
     console.error("❌ ERRO: Variáveis de ambiente (SUPABASE_URL, SUPABASE_KEY, CHAVE_MESTRA) não configuradas.");
     process.exit(1);
 }
 
+// Inicializa o cliente Supabase garantindo a conexão com o projeto idxyfkeodaettqbjuiak
+// O endpoint S3 correspondente é: https://idxyfkeodaettqbjuiak.storage.supabase.co/storage/v1/s3
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Nome do bucket configurado no painel do Supabase
@@ -39,13 +42,14 @@ async function uploadStorage(file) {
     const extensao = file.originalname.split('.').pop();
     const novoNomeArquivo = `${Date.now()}_vestido.${extensao}`;
 
-    // 2. Conecta ao bucket e realiza o upload seguindo o padrão solicitado
-    const { data, error } = await supabase.storage
-        .from(BUCKET_NAME) // 1. Aponta para o seu bucket 'toa-toa-moda-festa'
-        .upload(novoNomeArquivo, file.buffer, { // 2. Define o nome gerado e o buffer do arquivo
+    // 2. Realiza o upload para o bucket 'toa-toa-moda-festa' na região sa-east-1
+    const { data, error } = await supabase
+        .storage
+        .from(BUCKET_NAME)
+        .upload(novoNomeArquivo, file.buffer, {
             cacheControl: '3600',
             upsert: false,
-            contentType: file.mimetype
+            contentType: file.mimetype // Mantém o tipo do arquivo original
         });
 
     if (error) {
