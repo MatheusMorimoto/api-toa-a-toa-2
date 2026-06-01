@@ -12,6 +12,7 @@ A API está ativa em: [https://api-toa-a-toa-2.onrender.com](https://api-toa-a-t
 - **Processamento Binário:** Suporte a `multipart/form-data` para envio de arquivos reais via PHP (CURLFile) ou Formulários.
 - **Ciclo CRUD Completo:** Rotas para Listar, Buscar, Salvar, Atualizar e Deletar com persistência de dados e arquivos (Produtos).
 - **Gestão de Clientes:** Novo módulo CRUD para gerenciamento de clientes com suporte a múltiplos contatos via JSONB.
+- **Módulo de Vendas:** Registro de vendas complexas com múltiplos itens e baixa automática de estoque.
 - **Gestão de Ativos:** Limpeza automática de arquivos físicos no Storage ao excluir ou substituir fotos de produtos.
 
 ## 🖥️ Painel Administrativo (index.html)
@@ -49,6 +50,11 @@ O projeto conta com uma interface de gestão integrada acessível na raiz (`/`).
 | **PUT** | `/toa-toa-clientes/:id?` | Atualiza dados do cliente |
 | **DELETE** | `/toa-toa-clientes/:id?` | Remove o cliente do banco |
 
+### Vendas
+| Método | Endpoint | Descrição |
+| :--- | :--- | :--- |
+| **POST** | `/toa-toa-vendas` | Registra venda, salva itens e abate estoque de produtos vendidos |
+
 ## 🔐 Segurança
 Todas as requisições exigem o header:
 `x-api-key: [VALOR_DA_CHAVE_MESTRA]`
@@ -79,7 +85,7 @@ npm start
 
 # Atualizar repositório com segurança
 git add .
-git commit -m "Update: Implementação de Storage e CRUD completo"
+git commit -m "Update: Implementação de Vendas e Baixa de Estoque"
 git push origin main
 ```
 ## ⚙️ Configuração do Ambiente (.env)
