@@ -99,6 +99,67 @@
         </table>
     </div>
 
+    <div class="secao">
+        <h2>💰 Registrar Nova Venda</h2>
+        <form id="vendaForm">
+            <label for="venda_cliente_id">Cliente:</label>
+            <select id="venda_cliente_id" required>
+                <option value="">Carregando clientes...</option>
+            </select>
+            
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <div style="flex: 1;">
+                    <label for="forma_pagamento">Pagamento:</label>
+                    <select id="forma_pagamento">
+                        <option value="pix">PIX</option>
+                        <option value="cartao_credito">Cartão de Crédito</option>
+                        <option value="cartao_debito">Cartão de Débito</option>
+                        <option value="dinheiro">Dinheiro</option>
+                    </select>
+                </div>
+                <div style="flex: 1;">
+                    <label for="valor_costura">Custo Costura:</label>
+                    <input type="number" step="0.01" id="valor_costura" placeholder="0.00">
+                </div>
+                <div style="flex: 1;">
+                    <label for="desconto_valor">Desconto:</label>
+                    <input type="number" step="0.01" id="desconto_valor" placeholder="0.00">
+                </div>
+            </div>
+
+            <textarea id="venda_observacoes" placeholder="Observações da Venda (Ajustes, etc)" style="margin-top: 10px;"></textarea>
+
+            <fieldset style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                <legend style="font-weight: bold; padding: 0 5px; color: #28a745;">Adicionar Itens</legend>
+                <div style="display: flex; gap: 10px; align-items: flex-end; margin-bottom: 10px;">
+                    <div style="flex: 2;">
+                        <label style="font-size: 0.8em;">Produto:</label>
+                        <select id="item_produto_id"></select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-size: 0.8em;">Tipo:</label>
+                        <select id="item_tipo">
+                            <option value="venda">Venda</option>
+                            <option value="aluguel">Aluguel</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-size: 0.8em;">Preço:</label>
+                        <input type="number" step="0.01" id="item_preco" placeholder="0.00">
+                    </div>
+                    <button type="button" onclick="adicionarItemVenda()" style="width: auto; background: #17a2b8; padding: 5px 15px;">+</button>
+                </div>
+                <table id="itensVendaTable" style="margin-top: 5px; font-size: 0.85em;">
+                    <thead>
+                        <tr><th>Produto</th><th>Tipo</th><th>Preço</th><th>Ação</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </fieldset>
+            <button type="submit" style="background: #28a745; margin-top: 20px; font-size: 1.1em;">Finalizar Venda & Baixar Estoque</button>
+        </form>
+    </div>
+
     <!-- Seção de Relatório e Guia Técnico -->
     <div class="relatorio-tecnico">
         <h3>📘 Guia Técnico: Operações de Gestão</h3>
@@ -124,6 +185,12 @@
         <ul>
             <li><strong>Headers:</strong> Injeção obrigatória de <code>x-api-key</code> e <code>Content-Type: application/json</code>.</li>
             <li><strong>Modularidade:</strong> Este modelo garante que, se o banco de dados mudar no futuro, apenas o arquivo <code>db.js</code> precisará de ajustes, mantendo o comportamento do Painel e do PHP padronizados.</li>
+        </ul>
+
+        <h4>4. Gestão de Vendas</h4>
+        <p>O novo sistema de vendas permite agrupar múltiplos produtos em uma única transação.</p>
+        <ul>
+            <li><strong>Estoque Inteligente:</strong> Ao finalizar uma venda, o sistema automaticamente subtrai a quantidade dos produtos marcados como <code>Venda</code> no banco de dados.</li>
         </ul>
     </div>
 
@@ -186,6 +253,16 @@
                 
                 if (result.status === "sucesso") {
                     tbody.innerHTML = '';
+                    // Popula o seletor de produtos na área de vendas
+                    window.produtosCache = result.dados;
+                    const selectVenda = document.getElementById('item_produto_id');
+                    selectVenda.innerHTML = '<option value="">Selecione um Produto...</option>';
+                    result.dados.forEach(p => {
+                        const opt = document.createElement('option');
+                        opt.value = p.id;
+                        opt.textContent = `${p.nome} (Qtd: ${p.quantidade})`;
+                        selectVenda.appendChild(opt);
+                    });
                     result.dados.forEach(p => { // Adiciona um evento de clique para buscar detalhes
                         const tr = document.createElement('tr');
                         const imgTag = p.imagem && p.imagem !== 'placeholder.jpg' ? `<img src="${p.imagem}" width="40" height="40" style="object-fit:cover; border-radius:4px; vertical-align:middle;">` : '🖼️';
@@ -332,6 +409,15 @@
                 const result = await res.json();
                 if (result.status === "sucesso") {
                     tbody.innerHTML = '';
+                    // Popula o seletor de clientes na área de vendas
+                    const selectVendaCli = document.getElementById('venda_cliente_id');
+                    selectVendaCli.innerHTML = '<option value="">Selecione o Cliente...</option>';
+                    result.dados.forEach(c => {
+                        const opt = document.createElement('option');
+                        opt.value = c.id;
+                        opt.textContent = c.nome_completo;
+                        selectVendaCli.appendChild(opt);
+                    });
                     result.dados.forEach(c => {
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
@@ -383,6 +469,76 @@
                 }
             } catch (err) { alert('Erro ao carregar cliente.'); }
         }
+
+        // --- LOGICA DE VENDAS ---
+        let itensVenda = [];
+
+        function adicionarItemVenda() {
+            const produtoId = document.getElementById('item_produto_id').value;
+            const tipo = document.getElementById('item_tipo').value;
+            const preco = document.getElementById('item_preco').value;
+            
+            if (!produtoId || !preco) return alert("Selecione o produto e informe o preço.");
+            
+            const produto = window.produtosCache.find(p => p.id == produtoId);
+            itensVenda.push({
+                produto_id: parseInt(produtoId),
+                nome: produto.nome,
+                tipo: tipo,
+                preco: parseFloat(preco)
+            });
+            
+            document.getElementById('item_preco').value = '';
+            renderizarItensVenda();
+        }
+
+        function renderizarItensVenda() {
+            const tbody = document.querySelector('#itensVendaTable tbody');
+            tbody.innerHTML = '';
+            itensVenda.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${item.nome}</td>
+                    <td>${item.tipo}</td>
+                    <td>R$ ${item.preco.toFixed(2)}</td>
+                    <td><button type="button" onclick="removerItemVenda(${index})" style="background:#dc3545; width:auto; padding:2px 5px;">X</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function removerItemVenda(index) {
+            itensVenda.splice(index, 1);
+            renderizarItensVenda();
+        }
+
+        document.getElementById('vendaForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (itensVenda.length === 0) return alert("Adicione ao menos um item à venda.");
+            const data = {
+                cliente_id: parseInt(document.getElementById('venda_cliente_id').value),
+                forma_pagamento: document.getElementById('forma_pagamento').value,
+                valor_costura: parseFloat(document.getElementById('valor_costura').value) || 0,
+                desconto_valor: parseFloat(document.getElementById('desconto_valor').value) || 0,
+                observacoes: document.getElementById('venda_observacoes').value,
+                itens: itensVenda.map(i => ({ produto_id: i.produto_id, tipo: i.tipo, preco: i.preco }))
+            };
+            try {
+                const res = await fetch('/toa-toa-vendas', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKeyInput.value },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                alert(result.mensagem);
+                if (res.ok) {
+                    document.getElementById('vendaForm').reset();
+                    itensVenda = [];
+                    renderizarItensVenda();
+                    carregarProdutos(); // Recarrega para ver estoque atualizado
+                }
+            } catch (err) { alert('Erro ao registrar venda: ' + err.message); }
+        });
 
         // Inicia as listagens ao carregar a página
         window.onload = () => {

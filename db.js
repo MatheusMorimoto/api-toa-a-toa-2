@@ -447,6 +447,87 @@ app.delete('/toa-toa-clientes/:id?', async (req, res) => {
     }
 });
 
+// --- ROTA PARA VENDAS (NOVO ENDPOINT) ---
+
+app.post('/toa-toa-vendas', async (req, res) => {
+    const chaveRecebida = req.headers['x-api-key'];
+
+    if (!chaveRecebida || chaveRecebida.trim() !== CHAVE_MESTRA.trim()) {
+        return res.status(401).json({ status: "erro", mensagem: "Acesso negado: Chave API inválida." });
+    }
+
+    const { cliente_id, forma_pagamento, valor_costura, desconto_valor, observacoes, itens } = req.body;
+
+    if (!cliente_id || !itens || !Array.isArray(itens)) {
+        return res.status(400).json({ status: "erro", mensagem: "Dados da venda incompletos ou inválidos." });
+    }
+
+    try {
+        // 1. Inserção na tabela vendas (Obtendo o venda_id)
+        const { data: vendaData, error: vendaError } = await supabase
+            .from('vendas')
+            .insert([{
+                cliente_id,
+                forma_pagamento,
+                valor_costura: parseFloat(valor_costura) || 0,
+                desconto_valor: parseFloat(desconto_valor) || 0,
+                observacoes
+            }])
+            .select()
+            .single();
+
+        if (vendaError) throw vendaError;
+        const venda_id = vendaData.id;
+
+        // 2. Loop de Itens para inserção e baixa de estoque
+        for (const item of itens) {
+            // Inserir cada item na tabela itens_venda
+            const { error: itemError } = await supabase
+                .from('itens_venda')
+                .insert([{
+                    venda_id,
+                    produto_id: item.produto_id,
+                    tipo: item.tipo,
+                    preco: parseFloat(item.preco) || 0
+                }]);
+
+            if (itemError) throw itemError;
+
+            // 3. Baixa de Estoque (Apenas para tipo 'venda')
+            if (item.tipo === 'venda') {
+                const { data: produto, error: fetchError } = await supabase
+                    .from('produtos')
+                    .select('quantidade')
+                    .eq('id', item.produto_id)
+                    .single();
+
+                if (fetchError) throw fetchError;
+
+                const { error: updateError } = await supabase
+                    .from('produtos')
+                    .update({ quantidade: (produto.quantidade || 0) - 1 })
+                    .eq('id', item.produto_id);
+
+                if (updateError) throw updateError;
+            }
+        }
+
+        res.json({
+            status: "sucesso",
+            mensagem: "Venda registrada e estoque atualizado com sucesso!",
+            venda_id: venda_id
+        });
+
+    } catch (error) {
+        console.error("❌ Erro ao processar venda:", error.message);
+        res.status(500).json({
+            status: "erro",
+            mensagem: "Erro ao processar venda no banco de dados.",
+            detalhe: error.message
+        });
+    }
+});
+
 // Inicialização para Render (0.0.0.0 é essencial)
 app.listen(port, '0.0.0.0', () => {
     console.log(`🚀 API TOA-TOA Online na porta ${port}`);
