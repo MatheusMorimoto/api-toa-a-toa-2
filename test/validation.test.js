@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
     validateProduct, validateClient, validateSale, detectImage,
-    storagePathFromUrl, safeEqual
+    storagePathFromUrl, safeEqual, normalizeProduct
 } = require('../db');
 
 test('autenticação compara chaves sem aceitar prefixos ou valores ausentes', () => {
@@ -65,4 +65,18 @@ test('somente URLs do bucket e pasta esperados podem ser removidas', () => {
     assert.equal(storagePathFromUrl(valid), 'produtos/foto.jpg');
     assert.equal(storagePathFromUrl('https://example.com/produtos/foto.jpg'), null);
     assert.equal(storagePathFromUrl('placeholder.jpg'), null);
+});
+
+test('produto da view é normalizado para os campos esperados pelo frontend', () => {
+    const product = normalizeProduct({
+        id: 1,
+        url_imagem_completa: 'https://projeto.supabase.co/foto.png',
+        estoque: 3,
+        valor_venda: 120,
+        valor_aluguel: 80
+    });
+    assert.equal(product.imagem, 'https://projeto.supabase.co/foto.png');
+    assert.equal(product.quantidade, 3);
+    assert.equal(product.preco_unitario, 120);
+    assert.equal(product.preco_pacote, 80);
 });

@@ -197,6 +197,17 @@ function mapDatabaseError(error) {
     return error;
 }
 
+function normalizeProduct(product) {
+    if (!product || typeof product !== 'object') return product;
+    return {
+        ...product,
+        imagem: product.imagem || product.url_imagem_completa || product.path_original || 'placeholder.jpg',
+        quantidade: product.quantidade ?? product.estoque ?? 0,
+        preco_unitario: product.preco_unitario ?? product.valor_venda ?? 0,
+        preco_pacote: product.preco_pacote ?? product.valor_aluguel ?? 0
+    };
+}
+
 function createApp({ supabase, apiKey, allowedOrigins = [], isProduction = false } = {}) {
     if (!supabase) throw new Error('Cliente Supabase não informado.');
     if (!apiKey) throw new Error('CHAVE_MESTRA não configurada.');
@@ -279,7 +290,12 @@ function createApp({ supabase, apiKey, allowedOrigins = [], isProduction = false
         try {
             const { data, error } = await supabase.from('v_produtos_detalhados').select('*');
             if (error) throw error;
-            res.json({ status: 'sucesso', projeto: 'toa-toa-api-supabase', origem: 'Supabase via Node.js', dados: data });
+            res.json({
+                status: 'sucesso',
+                projeto: 'toa-toa-api-supabase',
+                origem: 'Supabase via Node.js',
+                dados: (data || []).map(normalizeProduct)
+            });
         } catch (error) { next(error); }
     });
 
@@ -289,7 +305,7 @@ function createApp({ supabase, apiKey, allowedOrigins = [], isProduction = false
             const { data, error } = await supabase.from('v_produtos_detalhados').select('*').eq('id', id).maybeSingle();
             if (error) throw error;
             if (!data) throw apiError(404, 'Produto não encontrado.', 'NOT_FOUND');
-            res.json({ status: 'sucesso', dados: data });
+            res.json({ status: 'sucesso', dados: normalizeProduct(data) });
         } catch (error) { next(error); }
     });
 
@@ -457,5 +473,6 @@ module.exports = {
     validateSale,
     detectImage,
     storagePathFromUrl,
-    safeEqual
+    safeEqual,
+    normalizeProduct
 };
