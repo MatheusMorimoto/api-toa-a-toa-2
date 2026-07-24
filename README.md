@@ -6,7 +6,7 @@ API Node.js e painel administrativo para produtos, clientes e vendas da Tôa Tô
 
 As credenciais ficam exclusivamente em variáveis de ambiente. Nunca coloque uma chave `service_role` no frontend, no README ou no Git. Uma chave administrativa esteve anteriormente versionada neste repositório e deve ser **revogada e rotacionada manualmente no Supabase antes de um novo deploy**.
 
-Somente a pasta `public/` é servida por HTTP. O código-fonte, `.env`, documentação, dependências e arquivos legados não são públicos. O painel mantém a chave de acesso apenas na memória da página.
+Somente a pasta `public/` é servida por HTTP. O código-fonte, `.env`, documentação, dependências e arquivos legados não são públicos. Depois do primeiro acesso correto, o painel cria uma sessão persistente em cookie `HttpOnly`; a chave não é gravada no JavaScript nem no armazenamento da página.
 
 ## Funcionalidades preservadas
 

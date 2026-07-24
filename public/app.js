@@ -26,8 +26,8 @@ function button(label, className, handler) {
 
 async function request(url, options = {}) {
     const headers = new Headers(options.headers || {});
-    headers.set('x-api-key', apiKeyInput.value);
-    const response = await fetch(url, { ...options, headers });
+    if (apiKeyInput.value) headers.set('x-api-key', apiKeyInput.value);
+    const response = await fetch(url, { ...options, headers, credentials: 'same-origin' });
     const type = response.headers.get('content-type') || '';
     const body = type.includes('application/json') ? await response.json() : { mensagem: await response.text() };
     if (!response.ok) throw new Error(body.mensagem || `Erro HTTP ${response.status}`);
@@ -265,3 +265,15 @@ saleForm.addEventListener('submit', async (event) => {
 
 byId('atualizarProdutos').addEventListener('click', loadProducts);
 byId('atualizarClientes').addEventListener('click', loadClients);
+
+async function restoreAccess() {
+    try {
+        await request('/auth/status');
+        apiKeyInput.placeholder = 'Acesso salvo neste navegador';
+        await Promise.all([loadProducts(), loadClients()]);
+    } catch {
+        apiKeyInput.placeholder = 'Digite a senha para acessar';
+    }
+}
+
+restoreAccess();

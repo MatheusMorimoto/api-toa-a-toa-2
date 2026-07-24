@@ -12,6 +12,8 @@ const { createClient } = require('@supabase/supabase-js');
 const BUCKET_NAME = process.env.SUPABASE_BUCKET || 'toa-toa-moda-festa';
 const MAX_IMAGE_BYTES = Number(process.env.MAX_IMAGE_BYTES || 5 * 1024 * 1024);
 const PUBLIC_DIR = path.join(__dirname, 'public');
+const SESSION_COOKIE = 'toa_toa_session';
+const SESSION_MAX_AGE_SECONDS = 365 * 24 * 60 * 60;
 const PRODUCT_FIELDS = {
     codProduto: 'cod',
     nomeProduto: 'nome',
@@ -40,6 +42,24 @@ function safeEqual(received, expected) {
     const left = Buffer.from(received.trim());
     const right = Buffer.from(expected.trim());
     return left.length === right.length && crypto.timingSafeEqual(left, right);
+}
+
+function sessionToken(apiKey) {
+    return crypto.createHmac('sha256', apiKey).update('toa-toa-admin-session-v1').digest('base64url');
+}
+
+function cookieValue(req, name) {
+    const cookies = String(req.headers.cookie || '').split(';');
+    for (const cookie of cookies) {
+        const separator = cookie.indexOf('=');
+        if (separator < 0 || cookie.slice(0, separator).trim() !== name) continue;
+        try {
+            return decodeURIComponent(cookie.slice(separator + 1).trim());
+        } catch {
+            return '';
+        }
+    }
+    return '';
 }
 
 function positiveId(value, field = 'ID') {
@@ -257,8 +277,19 @@ function createApp({ supabase, apiKey, allowedOrigins = [], isProduction = false
     });
 
     const authenticate = (req, res, next) => {
-        if (!safeEqual(req.get('x-api-key'), apiKey)) {
+        const validHeader = safeEqual(req.get('x-api-key'), apiKey);
+        const validSession = safeEqual(cookieValue(req, SESSION_COOKIE), sessionToken(apiKey));
+        if (!validHeader && !validSession) {
             return res.status(401).json({ status: 'erro', mensagem: 'Acesso negado: chave API inválida.' });
+        }
+        if (validHeader) {
+            res.cookie(SESSION_COOKIE, sessionToken(apiKey), {
+                httpOnly: true,
+                secure: isProduction,
+                sameSite: 'strict',
+                maxAge: SESSION_MAX_AGE_SECONDS * 1000,
+                path: '/'
+            });
         }
         next();
     };
@@ -283,6 +314,7 @@ function createApp({ supabase, apiKey, allowedOrigins = [], isProduction = false
 
     app.get('/health', (req, res) => res.json({ status: 'ok' }));
     app.get('/', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'index.html')));
+    app.get('/auth/status', authenticate, (req, res) => res.json({ status: 'sucesso', autenticado: true }));
 
     app.use(['/toa-toa-api-supabase', '/toa-toa-api-supabase/*', '/toa-toa-clientes', '/toa-toa-clientes/*', '/toa-toa-vendas'], authenticate);
 

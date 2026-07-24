@@ -27,6 +27,20 @@ test('endpoint protegido rejeita chave ausente', async () => {
     assert.match(response.body.mensagem, /Acesso negado/);
 });
 
+test('chave correta cria sessão persistente aceita nas próximas requisições', async () => {
+    const browser = request.agent(app());
+    const login = await browser
+        .get('/auth/status')
+        .set('x-api-key', 'chave-teste')
+        .expect(200);
+
+    assert.match(login.headers['set-cookie'][0], /toa_toa_session=/);
+    assert.match(login.headers['set-cookie'][0], /HttpOnly/);
+    assert.match(login.headers['set-cookie'][0], /SameSite=Strict/);
+
+    await browser.get('/auth/status').expect(200);
+});
+
 test('arquivos privados não são publicados', async () => {
     await request(app()).get('/.env').expect(404);
     await request(app()).get('/README.md').expect(404);
