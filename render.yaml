@@ -3,7 +3,7 @@ services:
     name: toa-toa-api
     runtime: node
     plan: free
-    buildCommand: npm install
+    buildCommand: npm ci
     startCommand: npm start
     envVars:
       - key: SUPABASE_URL
@@ -12,9 +12,15 @@ services:
         sync: false
       - key: CHAVE_MESTRA
         sync: false
+      - key: SUPABASE_BUCKET
+        value: toa-toa-moda-festa
+      - key: CORS_ORIGINS
+        sync: false
+      - key: NODE_ENV
+        value: production
       - key: NODE_VERSION
         value: 20
       - key: PORT
         value: 3000
-    healthCheckPath: /
+    healthCheckPath: /health
     rootDirectory: .

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Painel TOA-TOA</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <h1>Painel TOA-TOA</h1>
+
+    <section class="config">
+        <label for="apiKey">Chave de acesso</label>
+        <input type="password" id="apiKey" autocomplete="off" required>
+        <p>A chave permanece somente na memória desta página.</p>
+    </section>
+
+    <section>
+        <h2>Gestão de Produtos</h2>
+        <form id="produtoForm">
+            <input type="hidden" id="produtoId">
+            <input type="text" id="codProduto" placeholder="Código do Produto">
+            <input type="text" id="nomeProduto" placeholder="Nome do Produto" required>
+            <input type="text" id="categoria" placeholder="Categoria">
+            <input type="date" id="validade">
+            <input type="number" id="quantidade" placeholder="Quantidade" value="1" min="0" step="1">
+            <input type="number" id="precoUnitario" placeholder="Preço Unitário" min="0" step="0.01">
+            <input type="number" id="precoPacote" placeholder="Preço Pacote" min="0" step="0.01">
+            <textarea id="descricao" placeholder="Descrição"></textarea>
+            <label for="imagemProduto">Foto do Produto (JPEG, PNG ou WebP; máximo configurado no servidor)</label>
+            <input type="file" id="imagemProduto" accept="image/jpeg,image/png,image/webp">
+            <button type="submit">Salvar Produto</button>
+        </form>
+        <h3>Lista de Produtos</h3>
+        <button type="button" id="atualizarProdutos" class="secondary">Atualizar Lista</button>
+        <table id="produtosTable">
+            <thead><tr><th>ID</th><th>Foto</th><th>Nome</th><th>Preço</th><th>Qtd.</th><th>Ações</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </section>
+
+    <section>
+        <h2>Gestão de Clientes</h2>
+        <form id="clienteForm">
+            <input type="hidden" id="clienteId">
+            <input type="text" id="nome_completo" placeholder="Nome Completo" required>
+            <input type="text" id="cpf" placeholder="CPF" required>
+            <input type="text" id="rg" placeholder="RG">
+            <div class="row">
+                <input type="text" id="whatsapp" placeholder="WhatsApp" required>
+                <input type="text" id="tipo_contato_1" placeholder="Tipo" value="Pessoal">
+            </div>
+            <div class="row">
+                <input type="text" id="telefone_secundario" placeholder="Telefone Secundário">
+                <input type="text" id="tipo_contato_2" placeholder="Tipo">
+            </div>
+            <input type="email" id="email" placeholder="E-mail">
+            <input type="text" id="cep" placeholder="CEP">
+            <textarea id="endereco" placeholder="Endereço"></textarea>
+            <input type="date" id="data_evento">
+            <textarea id="preferencias" placeholder="Preferências/Observações"></textarea>
+            <button type="submit">Salvar Cliente</button>
+        </form>
+        <h3>Lista de Clientes</h3>
+        <button type="button" id="atualizarClientes" class="secondary">Atualizar Lista</button>
+        <table id="clientesTable">
+            <thead><tr><th>ID</th><th>Nome</th><th>WhatsApp</th><th>Ações</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </section>
+
+    <section>
+        <h2>Registrar Nova Venda</h2>
+        <form id="vendaForm">
+            <label for="venda_cliente_id">Cliente</label>
+            <select id="venda_cliente_id" required><option value="">Carregue os clientes</option></select>
+            <div class="row">
+                <div>
+                    <label for="forma_pagamento">Pagamento</label>
+                    <select id="forma_pagamento" required>
+                        <option value="pix">PIX</option>
+                        <option value="cartao_credito">Cartão de Crédito</option>
+                        <option value="cartao_debito">Cartão de Débito</option>
+                        <option value="dinheiro">Dinheiro</option>
+                    </select>
+                </div>
+                <div><label for="valor_costura">Custo Costura</label><input type="number" min="0" step="0.01" id="valor_costura" value="0"></div>
+                <div><label for="desconto_valor">Desconto</label><input type="number" min="0" step="0.01" id="desconto_valor" value="0"></div>
+            </div>
+            <textarea id="venda_observacoes" placeholder="Observações da Venda"></textarea>
+            <fieldset>
+                <legend>Adicionar Itens</legend>
+                <div class="row">
+                    <select id="item_produto_id"><option value="">Carregue os produtos</option></select>
+                    <select id="item_tipo"><option value="venda">Venda</option><option value="aluguel">Aluguel</option></select>
+                    <input type="number" min="0" step="0.01" id="item_preco" placeholder="Preço">
+                    <button type="button" id="adicionarItem">Adicionar</button>
+                </div>
+                <table id="itensVendaTable">
+                    <thead><tr><th>Produto</th><th>Tipo</th><th>Preço</th><th>Ação</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </fieldset>
+            <button type="submit">Finalizar Venda e Baixar Estoque</button>
+        </form>
+    </section>
+
+    <section class="guide">
+        <h2>Guia técnico</h2>
+        <p>Cadastros usam POST, edições usam PUT e exclusões usam DELETE. Todas as operações administrativas exigem <code>x-api-key</code>.</p>
+        <p>Uma nova foto só substitui a anterior depois da atualização do banco. A venda é processada no banco por uma função transacional: qualquer falha cancela a venda inteira e preserva o estoque.</p>
+    </section>
+
+    <script src="/app.js" defer></script>
+</body>
+</html>

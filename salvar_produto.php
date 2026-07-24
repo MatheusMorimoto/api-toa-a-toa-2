@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $res = json_decode($response, true);
         if ($httpCode === 200 && ($res['status'] ?? '') === 'sucesso') {
             // Redireciona de volta com sucesso
-            header("Location: index.php?sucesso=1");
+            header("Location: /?sucesso=1");
             exit;
         } else {
             echo "Erro na API: " . ($res['mensagem'] ?? 'Erro desconhecido');
@@ -66,6 +66,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 } else {
-    header("Location: index.php");
+    header("Location: /");
 }
 ?>
