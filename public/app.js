@@ -26,6 +26,7 @@ function button(label, className, handler) {
 
 async function request(url, options = {}) {
     const headers = new Headers(options.headers || {});
+    headers.set('x-csrf-protection', '1');
     if (apiKeyInput.value) headers.set('x-api-key', apiKeyInput.value);
     const response = await fetch(url, { ...options, headers, credentials: 'same-origin' });
     const type = response.headers.get('content-type') || '';

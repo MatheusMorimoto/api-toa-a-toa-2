@@ -13,7 +13,7 @@ const BUCKET_NAME = process.env.SUPABASE_BUCKET || 'toa-toa-moda-festa';
 const MAX_IMAGE_BYTES = Number(process.env.MAX_IMAGE_BYTES || 5 * 1024 * 1024);
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const SESSION_COOKIE = 'toa_toa_session';
-const SESSION_MAX_AGE_SECONDS = 365 * 24 * 60 * 60;
+const SESSION_MAX_AGE_SECONDS = Number(process.env.SESSION_MAX_AGE_SECONDS || 12 * 60 * 60);
 const PRODUCT_FIELDS = {
     codProduto: 'cod',
     nomeProduto: 'nome',
@@ -44,8 +44,22 @@ function safeEqual(received, expected) {
     return left.length === right.length && crypto.timingSafeEqual(left, right);
 }
 
-function sessionToken(apiKey) {
-    return crypto.createHmac('sha256', apiKey).update('toa-toa-admin-session-v1').digest('base64url');
+function sessionToken(apiKey, now = Date.now()) {
+    const expiresAt = Math.floor(now / 1000) + SESSION_MAX_AGE_SECONDS;
+    const payload = `${expiresAt}.${crypto.randomBytes(24).toString('base64url')}`;
+    const signature = crypto.createHmac('sha256', apiKey).update(`toa-toa-admin-session-v2.${payload}`).digest('base64url');
+    return `${payload}.${signature}`;
+}
+
+function validSessionToken(token, apiKey, now = Date.now()) {
+    if (typeof token !== 'string') return false;
+    const parts = token.split('.');
+    if (parts.length !== 3 || !/^\d+$/.test(parts[0])) return false;
+    const expiresAt = Number(parts[0]);
+    if (!Number.isSafeInteger(expiresAt) || expiresAt <= Math.floor(now / 1000)) return false;
+    const payload = `${parts[0]}.${parts[1]}`;
+    const expected = crypto.createHmac('sha256', apiKey).update(`toa-toa-admin-session-v2.${payload}`).digest('base64url');
+    return safeEqual(parts[2], expected);
 }
 
 function cookieValue(req, name) {
@@ -311,6 +325,7 @@ function createApp({ supabase, apiKey, allowedOrigins = [], isProduction = false
     if (!apiKey) throw new Error('CHAVE_MESTRA não configurada.');
 
     const app = express();
+    const sessionCookie = isProduction ? `__Host-${SESSION_COOKIE}` : SESSION_COOKIE;
     app.disable('x-powered-by');
     app.set('trust proxy', 1);
     app.use(helmet({
@@ -339,6 +354,14 @@ function createApp({ supabase, apiKey, allowedOrigins = [], isProduction = false
         legacyHeaders: false,
         handler: (req, res) => res.status(429).json({ status: 'erro', mensagem: 'Muitas requisições. Tente novamente em instantes.' })
     }));
+    const authLimiter = rateLimit({
+        windowMs: 15 * 60_000,
+        limit: 20,
+        skipSuccessfulRequests: true,
+        standardHeaders: 'draft-7',
+        legacyHeaders: false,
+        handler: (req, res) => res.status(429).json({ status: 'erro', mensagem: 'Muitas tentativas de autenticação.' })
+    });
     app.use(express.json({ limit: '1mb' }));
     app.use(express.urlencoded({ extended: false, limit: '1mb' }));
     app.use(express.static(PUBLIC_DIR, { dotfiles: 'deny', index: false, fallthrough: true }));
@@ -356,12 +379,16 @@ function createApp({ supabase, apiKey, allowedOrigins = [], isProduction = false
 
     const authenticate = (req, res, next) => {
         const validHeader = safeEqual(req.get('x-api-key'), apiKey);
-        const validSession = safeEqual(cookieValue(req, SESSION_COOKIE), sessionToken(apiKey));
+        const validSession = validSessionToken(cookieValue(req, sessionCookie), apiKey);
         if (!validHeader && !validSession) {
             return res.status(401).json({ status: 'erro', mensagem: 'Acesso negado: chave API inválida.' });
         }
+        if (!validHeader && validSession && !['GET', 'HEAD', 'OPTIONS'].includes(req.method)
+            && req.get('x-csrf-protection') !== '1') {
+            return res.status(403).json({ status: 'erro', mensagem: 'Proteção CSRF ausente.' });
+        }
         if (validHeader) {
-            res.cookie(SESSION_COOKIE, sessionToken(apiKey), {
+            res.cookie(sessionCookie, sessionToken(apiKey), {
                 httpOnly: true,
                 secure: isProduction,
                 sameSite: 'strict',
@@ -369,6 +396,7 @@ function createApp({ supabase, apiKey, allowedOrigins = [], isProduction = false
                 path: '/'
             });
         }
+        res.set('Cache-Control', 'no-store');
         next();
     };
 
@@ -392,9 +420,13 @@ function createApp({ supabase, apiKey, allowedOrigins = [], isProduction = false
 
     app.get('/health', (req, res) => res.json({ status: 'ok' }));
     app.get('/', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'index.html')));
-    app.get('/auth/status', authenticate, (req, res) => res.json({ status: 'sucesso', autenticado: true }));
+    app.get('/auth/status', authLimiter, authenticate, (req, res) => res.json({ status: 'sucesso', autenticado: true }));
+    app.post('/auth/logout', (req, res) => {
+        res.clearCookie(sessionCookie, { httpOnly: true, secure: isProduction, sameSite: 'strict', path: '/' });
+        res.json({ status: 'sucesso' });
+    });
 
-    app.use(['/toa-toa-api-supabase', '/toa-toa-api-supabase/*', '/toa-toa-clientes', '/toa-toa-clientes/*', '/toa-toa-vendas', '/toa-toa-vendas/*'], authenticate);
+    app.use(['/toa-toa-api-supabase', '/toa-toa-api-supabase/*', '/toa-toa-clientes', '/toa-toa-clientes/*', '/toa-toa-vendas', '/toa-toa-vendas/*'], authLimiter, authenticate);
 
     app.get('/toa-toa-api-supabase', async (req, res, next) => {
         try {
@@ -567,7 +599,7 @@ function createApp({ supabase, apiKey, allowedOrigins = [], isProduction = false
             return res.status(status).json({ status: 'erro', mensagem: status === 413 ? 'Imagem excede o tamanho permitido.' : 'Upload inválido.' });
         }
         const status = Number.isInteger(error.status) ? error.status : 500;
-        if (status >= 500) console.error(`[api] ${error.code || 'INTERNAL_ERROR'}: ${error.message}`);
+        if (status >= 500) console.error(`[api] ${error.code || 'INTERNAL_ERROR'}`);
         res.status(status).json({
             status: 'erro',
             mensagem: status >= 500 ? 'Erro interno do servidor.' : error.message,
@@ -610,5 +642,7 @@ module.exports = {
     safeEqual,
     normalizeProduct,
     saleFilters,
-    formatSale
+    formatSale,
+    sessionToken,
+    validSessionToken
 };

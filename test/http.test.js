@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const request = require('supertest');
-const { createApp } = require('../db');
+const { createApp, sessionToken, validSessionToken } = require('../db');
 
 function stubSupabase() {
     return {
@@ -39,6 +39,22 @@ test('chave correta cria sessão persistente aceita nas próximas requisições'
     assert.match(login.headers['set-cookie'][0], /SameSite=Strict/);
 
     await browser.get('/auth/status').expect(200);
+});
+
+test('sessão é assinada, expira e não aceita adulteração', () => {
+    const now = Date.now();
+    const token = sessionToken('chave-teste', now);
+    assert.equal(validSessionToken(token, 'chave-teste', now), true);
+    assert.equal(validSessionToken(`${token}x`, 'chave-teste', now), false);
+    assert.equal(validSessionToken(token, 'chave-teste', now + 13 * 60 * 60 * 1000), false);
+});
+
+test('sessão por cookie exige proteção CSRF em escrita e logout encerra acesso', async () => {
+    const browser = request.agent(app());
+    await browser.get('/auth/status').set('x-api-key', 'chave-teste').expect(200);
+    await browser.post('/toa-toa-clientes').send({}).expect(403);
+    await browser.post('/auth/logout').expect(200);
+    await browser.get('/auth/status').expect(401);
 });
 
 test('arquivos privados não são publicados', async () => {

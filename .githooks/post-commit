@@ -2,4 +2,8 @@
 
 # Publica automaticamente o commit recém-criado na branch correspondente.
 branch=$(git symbolic-ref --quiet --short HEAD) || exit 0
+npm run verify || {
+    echo "Push automático cancelado: verificações de segurança falharam." >&2
+    exit 1
+}
 git push origin "$branch"

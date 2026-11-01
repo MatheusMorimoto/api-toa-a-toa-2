@@ -6,7 +6,7 @@ API Node.js e painel administrativo para produtos, clientes e vendas da Tôa Tô
 
 As credenciais ficam exclusivamente em variáveis de ambiente. Nunca coloque uma chave `service_role` no frontend, no README ou no Git. Uma chave administrativa esteve anteriormente versionada neste repositório e deve ser **revogada e rotacionada manualmente no Supabase antes de um novo deploy**.
 
-Somente a pasta `public/` é servida por HTTP. O código-fonte, `.env`, documentação, dependências e arquivos legados não são públicos. Depois do primeiro acesso correto, o painel cria uma sessão persistente em cookie `HttpOnly`; a chave não é gravada no JavaScript nem no armazenamento da página.
+Somente a pasta `public/` é servida por HTTP. O código-fonte, `.env`, documentação, dependências e arquivos legados não são públicos. Depois do primeiro acesso correto, o painel cria uma sessão assinada, aleatória e temporária em cookie `HttpOnly` (e `__Host-` em produção); a chave não é gravada no JavaScript nem no armazenamento da página. Escritas autenticadas pelo cookie exigem proteção CSRF.
 
 ## Funcionalidades preservadas
 
@@ -96,6 +96,7 @@ Para aluguel, envie `tipo: "aluguel"`, `data_retirada` e `data_devolucao`. O pre
 - `SUPABASE_BUCKET`: bucket das imagens (padrão `toa-toa-moda-festa`).
 - `CORS_ORIGINS`: origens autorizadas, separadas por vírgula.
 - `MAX_IMAGE_BYTES`: limite de upload em bytes.
+- `SESSION_MAX_AGE_SECONDS`: duração máxima da sessão administrativa; padrão de 12 horas (`43200`).
 
 ## Upload e preservação de imagens
 
@@ -132,7 +133,7 @@ Para rollback, restaure a versão anterior do serviço. Não remova a RPC enquan
 
 ## Sincronização automática com GitHub
 
-Este clone usa o hook versionado `.githooks/post-commit`: depois de cada novo commit, a branch atual é enviada automaticamente para `origin`. A autenticação continua sendo responsabilidade do gerenciador de credenciais do Git; nenhuma credencial é salva no repositório.
+Este clone usa o hook versionado `.githooks/post-commit`: depois de cada novo commit, ele executa sintaxe, lint, testes e detecção de segredos. A branch atual só é enviada para `origin` se todas as verificações passarem. A autenticação continua sendo responsabilidade do gerenciador de credenciais do Git; nenhuma credencial é salva no repositório.
 
 ## PHP legado e Git
 
