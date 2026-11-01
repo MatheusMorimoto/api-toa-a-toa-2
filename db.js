@@ -170,17 +170,95 @@ function validateSale(body) {
         return {
             produto_id: positiveId(item.produto_id, `Produto do item ${index + 1}`),
             tipo,
-            preco: number(item.preco, `Preço do item ${index + 1}`, { min: 0 })
+            quantidade: number(item.quantidade ?? 1, `Quantidade do item ${index + 1}`, { integer: true, min: 1 })
         };
     });
-    if (itens.some((item) => item.preco === undefined)) throw apiError(422, 'Todos os itens precisam de preço.');
+    const formaPagamento = text(body.forma_pagamento, 'Forma de pagamento', { required: true, max: 50 });
+    const pagamentos = ['dinheiro', 'pix', 'cartao_debito', 'cartao_credito'];
+    if (!pagamentos.includes(formaPagamento)) throw apiError(422, 'Forma de pagamento inválida.');
+    const cartao = formaPagamento === 'cartao_debito' || formaPagamento === 'cartao_credito';
+    const bandeira = text(body.bandeira_cartao, 'Bandeira do cartão', { nullable: true, max: 30 });
+    const bandeiras = ['visa', 'mastercard', 'elo', 'american_express', 'hipercard', 'outra'];
+    if (cartao && !bandeiras.includes(bandeira)) throw apiError(422, 'Uma bandeira de cartão válida é obrigatória.');
+    if (!cartao && bandeira) throw apiError(422, 'Bandeira de cartão só pode ser informada para pagamentos com cartão.');
+    const retirada = date(body.data_retirada, 'Data de retirada') ?? null;
+    const devolucao = date(body.data_devolucao, 'Data de devolução') ?? null;
+    if (itens.some((item) => item.tipo === 'aluguel') && (!retirada || !devolucao)) {
+        throw apiError(422, 'Data de retirada e data de devolução são obrigatórias para aluguel.');
+    }
+    if (retirada && devolucao && devolucao < retirada) throw apiError(422, 'A devolução não pode ser anterior à retirada.');
     return {
         p_cliente_id: clienteId,
-        p_forma_pagamento: text(body.forma_pagamento, 'Forma de pagamento', { required: true, max: 50 }),
+        p_forma_pagamento: formaPagamento,
+        p_bandeira_cartao: cartao ? bandeira : null,
         p_valor_costura: number(body.valor_costura ?? 0, 'Valor da costura', { min: 0 }),
         p_desconto_valor: number(body.desconto_valor ?? 0, 'Desconto', { min: 0 }),
+        p_data_retirada: retirada,
+        p_data_devolucao: devolucao,
         p_observacoes: text(body.observacoes, 'Observações', { nullable: true, max: 5000 }),
         p_itens: itens
+    };
+}
+
+function parseCsv(value, field, parser = (item) => item) {
+    if (value === undefined) return undefined;
+    if (typeof value !== 'string' || !value.trim()) throw apiError(422, `${field} inválido.`);
+    const values = value.split(',').map((item) => parser(item.trim()));
+    return [...new Set(values)];
+}
+
+function saleFilters(query) {
+    const start = query.data_inicio === undefined ? undefined : date(query.data_inicio, 'Data inicial');
+    const end = query.data_fim === undefined ? undefined : date(query.data_fim, 'Data final');
+    if (start && end && end < start) throw apiError(422, 'A data final não pode ser anterior à data inicial.');
+    const payments = parseCsv(query.forma_pagamento, 'Forma de pagamento');
+    const allowed = ['dinheiro', 'pix', 'cartao_debito', 'cartao_credito'];
+    if (payments?.some((payment) => !allowed.includes(payment))) throw apiError(422, 'Forma de pagamento inválida.');
+    return {
+        start,
+        endExclusive: end ? new Date(`${end}T00:00:00Z`).getTime() + 86_400_000 : undefined,
+        payments,
+        clienteId: query.cliente_id === undefined ? undefined : positiveId(query.cliente_id, 'Cliente'),
+        ids: parseCsv(query.ids, 'IDs', (id) => positiveId(id, 'ID'))
+    };
+}
+
+function formatSale(sale) {
+    const snapshot = sale.cliente_snapshot || {};
+    const items = sale.itens_venda || sale.itens || [];
+    return {
+        id: sale.id,
+        venda_id: sale.id,
+        cliente_id: sale.cliente_id,
+        cliente_nome: snapshot.nome_completo ?? null,
+        cliente_cpf: snapshot.cpf ?? null,
+        cliente_snapshot: snapshot,
+        cliente_detalhes: snapshot,
+        forma_pagamento: sale.forma_pagamento,
+        bandeira_cartao: sale.bandeira_cartao ?? null,
+        subtotal: Number(sale.total_bruto),
+        total_bruto: Number(sale.total_bruto),
+        valor_costura: Number(sale.valor_costura || 0),
+        desconto_valor: Number(sale.desconto_valor || 0),
+        valor_final: Number(sale.total_final),
+        total_final: Number(sale.total_final),
+        data_retirada: sale.data_retirada ?? null,
+        data_devolucao: sale.data_devolucao ?? null,
+        observacoes: sale.observacoes || '',
+        realizada_em: sale.data_venda,
+        data_venda: sale.data_venda,
+        itens: items.map((item) => ({
+            id: item.id,
+            produto_id: item.produto_id,
+            produto_nome: item.produto_nome,
+            tipo: item.tipo,
+            quantidade: item.quantidade,
+            preco: Number(item.preco_unitario),
+            preco_unitario: Number(item.preco_unitario),
+            subtotal: Number(item.subtotal),
+            data_retirada: item.data_retirada ?? null,
+            data_devolucao: item.data_devolucao ?? null
+        }))
     };
 }
 
@@ -316,7 +394,7 @@ function createApp({ supabase, apiKey, allowedOrigins = [], isProduction = false
     app.get('/', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'index.html')));
     app.get('/auth/status', authenticate, (req, res) => res.json({ status: 'sucesso', autenticado: true }));
 
-    app.use(['/toa-toa-api-supabase', '/toa-toa-api-supabase/*', '/toa-toa-clientes', '/toa-toa-clientes/*', '/toa-toa-vendas'], authenticate);
+    app.use(['/toa-toa-api-supabase', '/toa-toa-api-supabase/*', '/toa-toa-clientes', '/toa-toa-clientes/*', '/toa-toa-vendas', '/toa-toa-vendas/*'], authenticate);
 
     app.get('/toa-toa-api-supabase', async (req, res, next) => {
         try {
@@ -452,9 +530,33 @@ function createApp({ supabase, apiKey, allowedOrigins = [], isProduction = false
             const payload = validateSale(req.body);
             const { data, error } = await supabase.rpc('registrar_venda_atomica', payload);
             if (error) throw error;
-            const vendaId = data?.venda_id ?? data;
-            res.status(201).json({ status: 'sucesso', mensagem: 'Venda registrada e estoque atualizado com sucesso!', venda_id: vendaId });
+            res.status(201).json({ ok: true, ...data });
         } catch (error) { next(mapDatabaseError(error)); }
+    });
+
+    app.get('/toa-toa-vendas', async (req, res, next) => {
+        try {
+            const filters = saleFilters(req.query);
+            let query = supabase.from('vendas').select('*,itens_venda(*)').order('data_venda', { ascending: false });
+            if (filters.start) query = query.gte('data_venda', `${filters.start}T00:00:00.000Z`);
+            if (filters.endExclusive) query = query.lt('data_venda', new Date(filters.endExclusive).toISOString());
+            if (filters.payments) query = query.in('forma_pagamento', filters.payments);
+            if (filters.clienteId) query = query.eq('cliente_id', filters.clienteId);
+            if (filters.ids) query = query.in('id', filters.ids);
+            const { data, error } = await query;
+            if (error) throw error;
+            res.json({ dados: (data || []).map(formatSale) });
+        } catch (error) { next(error); }
+    });
+
+    app.get('/toa-toa-vendas/:id', async (req, res, next) => {
+        try {
+            const id = positiveId(req.params.id, 'Venda');
+            const { data, error } = await supabase.from('vendas').select('*,itens_venda(*)').eq('id', id).maybeSingle();
+            if (error) throw error;
+            if (!data) throw apiError(404, 'Venda não encontrada.', 'NOT_FOUND');
+            res.json({ dados: formatSale(data) });
+        } catch (error) { next(error); }
     });
 
     app.use((req, res) => res.status(404).json({ status: 'erro', mensagem: 'Rota não encontrada.' }));
@@ -506,5 +608,7 @@ module.exports = {
     detectImage,
     storagePathFromUrl,
     safeEqual,
-    normalizeProduct
+    normalizeProduct,
+    saleFilters,
+    formatSale
 };

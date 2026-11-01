@@ -39,20 +39,18 @@ test('cliente valida CPF e e-mail', () => {
     assert.throws(() => validateClient({}), /obrigatório/);
 });
 
-test('venda exige itens e valida preço/tipo', () => {
+test('venda exige itens, valida tipo e ignora qualquer preço do cliente', () => {
     assert.throws(() => validateSale({ cliente_id: 1, forma_pagamento: 'pix', itens: [] }), /ao menos um item/);
     assert.throws(() => validateSale({
         cliente_id: 1, forma_pagamento: 'pix',
         itens: [{ produto_id: 2, tipo: 'troca', preco: 10 }]
     }), /Tipo/);
     assert.throws(() => validateSale({
-        cliente_id: 1, forma_pagamento: 'pix',
-        itens: [{ produto_id: 2, tipo: 'venda', preco: -1 }]
-    }), /menor/);
-    assert.throws(() => validateSale({
         cliente_id: 1,
         itens: [{ produto_id: 2, tipo: 'venda', preco: 1 }]
     }), /Forma de pagamento/);
+    const sale = validateSale({ cliente_id: 1, forma_pagamento: 'pix', itens: [{ produto_id: 2, tipo: 'venda', preco: 0.01 }] });
+    assert.deepEqual(sale.p_itens, [{ produto_id: 2, tipo: 'venda', quantidade: 1 }]);
 });
 
 test('assinatura real do arquivo determina o tipo da imagem', () => {

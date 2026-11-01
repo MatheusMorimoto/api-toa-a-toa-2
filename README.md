@@ -12,7 +12,8 @@ Somente a pasta `public/` é servida por HTTP. O código-fonte, `.env`, document
 
 - CRUD de produtos, incluindo código, categoria, validade, estoque, preços, descrição e foto.
 - CRUD de clientes com contatos, documentos, endereço, data de evento e preferências.
-- Registro transacional de vendas com múltiplos itens.
+- Registro transacional de vendas e aluguéis com preços calculados no servidor.
+- Consulta de vendas por período, pagamento, cliente e IDs.
 - Baixa de estoque somente para itens do tipo `venda`.
 - Upload de JPEG, PNG e WebP no bucket configurado.
 - Limpeza segura das imagens substituídas ou de produtos removidos.
@@ -47,13 +48,14 @@ Todas as rotas administrativas exigem `x-api-key`.
 | GET/PUT/DELETE | `/toa-toa-api-supabase/:id` | Consultar/alterar/excluir produto |
 | GET/POST | `/toa-toa-clientes` | Listar/criar clientes |
 | GET/PUT/DELETE | `/toa-toa-clientes/:id` | Consultar/alterar/excluir cliente |
-| POST | `/toa-toa-vendas` | Registrar venda atômica |
+| GET/POST | `/toa-toa-vendas` | Consultar/registrar venda atômica |
+| GET | `/toa-toa-vendas/:id` | Consultar uma venda completa |
 
 Produtos usam `multipart/form-data`, com arquivo no campo `imagem`. Clientes e vendas usam JSON.
 
 ## Migração transacional de vendas
 
-O arquivo `migrations/001_registrar_venda_atomica.sql` cria a RPC `registrar_venda_atomica`. Ela valida registros, bloqueia produtos, impede estoque negativo e executa venda, itens e baixa de estoque na mesma transação.
+O arquivo `migrations/001_registrar_venda_atomica.sql` cria a RPC `registrar_venda_atomica`. Ela busca cliente e produtos, usa os preços atuais do banco, cria o snapshot do cliente, valida pagamento, aluguel, desconto e estoque, e executa venda, itens e baixa de estoque na mesma transação.
 
 Ela **não é executada automaticamente**. Antes de aplicá-la:
 
@@ -66,9 +68,34 @@ Rollback da função, sem excluir dados:
 
 ```sql
 drop function if exists public.registrar_venda_atomica(
-  bigint, text, numeric, numeric, text, jsonb
+  bigint, text, text, numeric, numeric, date, date, text, jsonb
 );
 ```
+
+## Exemplos de vendas e aluguéis
+
+```bash
+curl -X POST http://localhost:3000/toa-toa-vendas \
+  -H "content-type: application/json" \
+  -H "x-api-key: SUA_CHAVE" \
+  -d '{"cliente_id":1,"forma_pagamento":"pix","valor_costura":0,"desconto_valor":0,"itens":[{"produto_id":1,"tipo":"venda"}]}'
+
+curl -H "x-api-key: SUA_CHAVE" \
+  "http://localhost:3000/toa-toa-vendas?data_inicio=2026-11-01&data_fim=2026-11-30&forma_pagamento=pix"
+
+curl -H "x-api-key: SUA_CHAVE" http://localhost:3000/toa-toa-vendas/123
+```
+
+Para aluguel, envie `tipo: "aluguel"`, `data_retirada` e `data_devolucao`. O preço enviado pelo cliente é ignorado; a RPC usa `preco_unitario` em vendas e `preco_pacote` em aluguéis.
+
+## Variáveis de ambiente
+
+- `SUPABASE_URL`: URL do projeto Supabase.
+- `SUPABASE_KEY`: chave `service_role`, somente no backend.
+- `CHAVE_MESTRA`: valor exigido no cabeçalho `x-api-key`.
+- `SUPABASE_BUCKET`: bucket das imagens (padrão `toa-toa-moda-festa`).
+- `CORS_ORIGINS`: origens autorizadas, separadas por vírgula.
+- `MAX_IMAGE_BYTES`: limite de upload em bytes.
 
 ## Upload e preservação de imagens
 
@@ -102,6 +129,10 @@ Sequência segura:
 4. Faça deploy e verifique health, autenticação, CRUD e uma venda controlada.
 
 Para rollback, restaure a versão anterior do serviço. Não remova a RPC enquanto alguma instância depender dela. O rollback da aplicação não desfaz vendas confirmadas.
+
+## Sincronização automática com GitHub
+
+Este clone usa o hook versionado `.githooks/post-commit`: depois de cada novo commit, a branch atual é enviada automaticamente para `origin`. A autenticação continua sendo responsabilidade do gerenciador de credenciais do Git; nenhuma credencial é salva no repositório.
 
 ## PHP legado e Git
 

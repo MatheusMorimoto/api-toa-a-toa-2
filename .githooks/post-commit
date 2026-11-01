@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# Publica automaticamente o commit recém-criado na branch correspondente.
+branch=$(git symbolic-ref --quiet --short HEAD) || exit 0
+git push origin "$branch"
